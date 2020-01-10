@@ -1,0 +1,140 @@
+From 7440a2a58062181f6dae2ac2ddda30ae72eb2e73 Mon Sep 17 00:00:00 2001
+From: Kalev Lember <klember@redhat.com>
+Date: Thu, 9 Mar 2017 14:55:30 +0100
+Subject: [PATCH] Downstream translations for RHEL 7
+
+---
+ po/de.po    | 4 ++++
+ po/es.po    | 4 ++++
+ po/fr.po    | 4 ++++
+ po/it.po    | 4 ++++
+ po/ja.po    | 4 ++++
+ po/ko.po    | 3 +++
+ po/pt_BR.po | 4 ++++
+ po/ru.po    | 4 ++++
+ po/zh_CN.po | 4 ++++
+ po/zh_TW.po | 4 ++++
+ 10 files changed, 39 insertions(+)
+
+diff --git a/po/de.po b/po/de.po
+index 9f9b29b..266a34d 100644
+--- a/po/de.po
++++ b/po/de.po
+@@ -3784,3 +3784,7 @@ msgstr "Zubehör"
+ 
+ #~ msgid "Getting software details…"
+ #~ msgstr "Software-Details werden ermittelt …"
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "Anwendungs-Installer"
+diff --git a/po/es.po b/po/es.po
+index 20bf608..77170a5 100644
+--- a/po/es.po
++++ b/po/es.po
+@@ -3960,3 +3960,7 @@ msgstr "Utilidades"
+ 
+ #~ msgid "OS Update"
+ #~ msgstr "Actualización del SO"
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "Instalador de aplicaciones"
+diff --git a/po/fr.po b/po/fr.po
+index be28563..f5af80b 100644
+--- a/po/fr.po
++++ b/po/fr.po
+@@ -3064,3 +3064,7 @@ msgstr "Utilitaires"
+ #~ msgstr ""
+ #~ "Les sources de logiciels vous donnent accès à des logiciels "
+ #~ "supplémentaires."
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "Installeur d'application"
+diff --git a/po/it.po b/po/it.po
+index 739496e..05d3885 100644
+--- a/po/it.po
++++ b/po/it.po
+@@ -3047,3 +3047,7 @@ msgstr "Fonte"
+ #: ../src/plugins/gs-desktop-common.c:356
+ msgid "Utilities"
+ msgstr "Utilità"
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "Programma d'installazione delle applicazioni"
+diff --git a/po/ja.po b/po/ja.po
+index 755e0fd..a20a7e2 100644
+--- a/po/ja.po
++++ b/po/ja.po
+@@ -2868,3 +2868,7 @@ msgstr "ローカライゼーション"
+ #~| msgid "Updated"
+ #~ msgid "Update"
+ #~ msgstr "更新"
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "アプリケーションインストーラー"
+diff --git a/po/ko.po b/po/ko.po
+index 621e827..c95a541 100644
+--- a/po/ko.po
++++ b/po/ko.po
+@@ -2962,3 +2962,6 @@ msgstr "참고 자료"
+ msgid "Utilities"
+ msgstr "유틸리티"
+ 
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "응용 프로그램 설치"
+diff --git a/po/pt_BR.po b/po/pt_BR.po
+index 6638f4b..0c3ea8a 100644
+--- a/po/pt_BR.po
++++ b/po/pt_BR.po
+@@ -3896,3 +3896,7 @@ msgstr "Utilitários"
+ 
+ #~ msgid "Printing"
+ #~ msgstr "Impressão"
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "Instalador de aplicações"
+diff --git a/po/ru.po b/po/ru.po
+index d786c31..6885ea2 100644
+--- a/po/ru.po
++++ b/po/ru.po
+@@ -3054,3 +3054,7 @@ msgstr "Справка"
+ #: ../src/plugins/gs-desktop-common.c:356
+ msgid "Utilities"
+ msgstr "Утилиты"
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "Установка приложений"
+diff --git a/po/zh_CN.po b/po/zh_CN.po
+index 3ac8904..06cf6af 100644
+--- a/po/zh_CN.po
++++ b/po/zh_CN.po
+@@ -3749,3 +3749,7 @@ msgstr "实用工具"
+ 
+ #~ msgid "No AppStream data found"
+ #~ msgstr "未找到 AppStream 数据"
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "应用程序的安装程序"
+diff --git a/po/zh_TW.po b/po/zh_TW.po
+index 068e35f..504fcce 100644
+--- a/po/zh_TW.po
++++ b/po/zh_TW.po
+@@ -3681,3 +3681,7 @@ msgstr "公用程式"
+ 
+ #~ msgid "_Updates (%d)"
+ #~ msgstr "更新 (%d)(_U)"
++
++#: ../src/org.gnome.Software.desktop.in.h:1
++msgid "Application Installer"
++msgstr "應用程式的安裝程式"
+-- 
+1.8.3.1
+

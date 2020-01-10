@@ -27,6 +27,7 @@
 #include <string.h>
 #include <glib/gi18n.h>
 
+#include "gs-app-list-private.h"
 #include "gs-plugin-loader-sync.h"
 
 #include "gs-shell-search-provider-generated.h"
@@ -40,8 +41,6 @@ typedef struct {
 struct _GsShellSearchProvider {
 	GObject parent;
 
-	guint name_owner_id;
-	GDBusObjectManagerServer *object_manager;
 	GsShellSearchProvider2 *skeleton;
 	GsPluginLoader *plugin_loader;
 	GCancellable *cancellable;
@@ -58,15 +57,12 @@ pending_search_free (PendingSearch *search)
 	g_slice_free (PendingSearch, search);
 }
 
-/**
- * search_sort_by_kudo_cb:
- **/
 static gint
-search_sort_by_kudo_cb (gconstpointer a, gconstpointer b)
+search_sort_by_kudo_cb (GsApp *app1, GsApp *app2, gpointer user_data)
 {
 	guint pa, pb;
-	pa = gs_app_get_kudos_percentage (GS_APP (a));
-	pb = gs_app_get_kudos_percentage (GS_APP (b));
+	pa = gs_app_get_kudos_percentage (app1);
+	pb = gs_app_get_kudos_percentage (app2);
 	if (pa < pb)
 		return 1;
 	else if (pa > pb)
@@ -81,39 +77,41 @@ search_done_cb (GObject *source,
 {
 	PendingSearch *search = user_data;
 	GsShellSearchProvider *self = search->provider;
-	GList *list, *l;
+	guint i;
 	GVariantBuilder builder;
+	g_autoptr(GsAppList) list = NULL;
 
 	list = gs_plugin_loader_search_finish (self->plugin_loader, res, NULL);
 	if (list == NULL) {
 		g_dbus_method_invocation_return_value (search->invocation, g_variant_new ("(as)", NULL));
 		pending_search_free (search);
+		g_application_release (g_application_get_default ());
 		return;	
 	}
 
 	/* sort by kudos, as there is no ratings data by default */
-	list = g_list_sort (list, search_sort_by_kudo_cb);
+	gs_app_list_sort (list, search_sort_by_kudo_cb, NULL);
 
 	g_variant_builder_init (&builder, G_VARIANT_TYPE ("as"));
-	for (l = list; l != NULL; l = l->next) {
-		GsApp *app = GS_APP (l->data);
+	for (i = 0; i < gs_app_list_length (list); i++) {
+		GsApp *app = gs_app_list_index (list, i);
 		if (gs_app_get_state (app) != AS_APP_STATE_AVAILABLE)
 			continue;
 		g_variant_builder_add (&builder, "s", gs_app_get_id (app));
 	}
 	g_dbus_method_invocation_return_value (search->invocation, g_variant_new ("(as)", &builder));
 
-	g_list_free_full (list, g_object_unref);
 	pending_search_free (search);
+	g_application_release (g_application_get_default ());
 }
 
 static void
 execute_search (GsShellSearchProvider  *self,
 		GDBusMethodInvocation  *invocation,
-		gchar                 **terms)
+		gchar		 **terms)
 {
 	PendingSearch *pending_search;
-	gchar *string;
+	g_autofree gchar *string = NULL;
 
 	string = g_strjoinv (" ", terms);
 
@@ -133,19 +131,21 @@ execute_search (GsShellSearchProvider  *self,
 	pending_search->provider = self;
 	pending_search->invocation = g_object_ref (invocation);
 
+	g_application_hold (g_application_get_default ());
 	self->cancellable = g_cancellable_new ();
 	gs_plugin_loader_search_async (self->plugin_loader,
-				       string, 0, self->cancellable,
+				       string,
+				       GS_PLUGIN_REFINE_FLAGS_REQUIRE_ICON,
+				       self->cancellable,
 				       search_done_cb,
 				       pending_search);
-	g_free (string);
 }
 
 static gboolean
-handle_get_initial_result_set (GsShellSearchProvider2        *skeleton,
-                               GDBusMethodInvocation         *invocation,
-                               gchar                        **terms,
-                               gpointer                       user_data)
+handle_get_initial_result_set (GsShellSearchProvider2	*skeleton,
+			       GDBusMethodInvocation	 *invocation,
+			       gchar			**terms,
+			       gpointer		       user_data)
 {
 	GsShellSearchProvider *self = user_data;
 
@@ -155,11 +155,11 @@ handle_get_initial_result_set (GsShellSearchProvider2        *skeleton,
 }
 
 static gboolean
-handle_get_subsearch_result_set (GsShellSearchProvider2        *skeleton,
-                                 GDBusMethodInvocation         *invocation,
-                                 gchar                        **previous_results,
-                                 gchar                        **terms,
-                                 gpointer                       user_data)
+handle_get_subsearch_result_set (GsShellSearchProvider2	*skeleton,
+				 GDBusMethodInvocation	 *invocation,
+				 gchar			**previous_results,
+				 gchar			**terms,
+				 gpointer		       user_data)
 {
 	GsShellSearchProvider *self = user_data;
 
@@ -169,10 +169,10 @@ handle_get_subsearch_result_set (GsShellSearchProvider2        *skeleton,
 }
 
 static gboolean
-handle_get_result_metas (GsShellSearchProvider2        *skeleton,
-                         GDBusMethodInvocation         *invocation,
-                         gchar                        **results,
-                         gpointer                       user_data)
+handle_get_result_metas (GsShellSearchProvider2	*skeleton,
+			 GDBusMethodInvocation	 *invocation,
+			 gchar			**results,
+			 gpointer		       user_data)
 {
 	GsShellSearchProvider *self = user_data;
 	GVariantBuilder meta;
@@ -185,7 +185,7 @@ handle_get_result_metas (GsShellSearchProvider2        *skeleton,
 	g_debug ("****** GetResultMetas");
 
 	for (i = 0; results[i]; i++) {
-		GsApp *app;
+		g_autoptr(GsApp) app = NULL;
 
 		if (g_hash_table_lookup (self->metas_cache, results[i]))
 			continue;
@@ -193,7 +193,7 @@ handle_get_result_metas (GsShellSearchProvider2        *skeleton,
 		/* find the application with this ID */
 		app = gs_plugin_loader_get_app_by_id (self->plugin_loader,
 						      results[i],
-						      GS_PLUGIN_REFINE_FLAGS_DEFAULT |
+						      GS_PLUGIN_REFINE_FLAGS_REQUIRE_ICON |
 						      GS_PLUGIN_REFINE_FLAGS_REQUIRE_DESCRIPTION,
 						      NULL,
 						      &error);
@@ -213,7 +213,6 @@ handle_get_result_metas (GsShellSearchProvider2        *skeleton,
 		g_variant_builder_add (&meta, "{sv}", "description", g_variant_new_string (gs_app_get_summary (app)));
 		meta_variant = g_variant_builder_end (&meta);
 		g_hash_table_insert (self->metas_cache, g_strdup (gs_app_get_id (app)), g_variant_ref_sink (meta_variant));
-		g_object_unref (app);
 
 	}
 
@@ -232,68 +231,84 @@ handle_get_result_metas (GsShellSearchProvider2        *skeleton,
 
 static gboolean
 handle_activate_result (GsShellSearchProvider2 	     *skeleton,
-                        GDBusMethodInvocation        *invocation,
-                        gchar                        *result,
-                        gchar                       **terms,
-                        guint32                       timestamp,
-                        gpointer                      user_data)
+			GDBusMethodInvocation	*invocation,
+			gchar			*result,
+			gchar		       **terms,
+			guint32		       timestamp,
+			gpointer		      user_data)
 {
 	GApplication *app = g_application_get_default ();
-	gchar *string;
+	g_autofree gchar *string = NULL;
 
 	string = g_strjoinv (" ", terms);
 
 	g_action_group_activate_action (G_ACTION_GROUP (app), "details",
-                                  	g_variant_new ("(ss)", result, string));
+				  	g_variant_new ("(ss)", result, string));
 
-	g_free (string);
 	gs_shell_search_provider2_complete_activate_result (skeleton, invocation);
 	return TRUE;
 }
 
 static gboolean
 handle_launch_search (GsShellSearchProvider2 	   *skeleton,
-                      GDBusMethodInvocation        *invocation,
-                      gchar                       **terms,
-                      guint32                       timestamp,
-                      gpointer                      user_data)
+		      GDBusMethodInvocation	*invocation,
+		      gchar		       **terms,
+		      guint32		       timestamp,
+		      gpointer		      user_data)
 {
 	GApplication *app = g_application_get_default ();
-	gchar *string = g_strjoinv (" ", terms);
+	g_autofree gchar *string = g_strjoinv (" ", terms);
 
 	g_action_group_activate_action (G_ACTION_GROUP (app), "search",
-                                  	g_variant_new ("s", string));
-
-	g_free (string);
+				  	g_variant_new ("s", string));
 
 	gs_shell_search_provider2_complete_launch_search (skeleton, invocation);
 	return TRUE;
 }
 
-static void
-search_provider_name_acquired_cb (GDBusConnection *connection,
-                                  const gchar     *name,
-                                  gpointer         user_data)
+gboolean
+gs_shell_search_provider_register (GsShellSearchProvider *self,
+                                   GDBusConnection       *connection,
+                                   GError               **error)
 {
-	g_debug ("Search provider name acquired: %s", name);
+	return g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (self->skeleton),
+	                                         connection,
+	                                         "/org/gnome/Software/SearchProvider", error);
+}
+
+void
+gs_shell_search_provider_unregister (GsShellSearchProvider *self)
+{
+	g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (self->skeleton));
 }
 
 static void
-search_provider_name_lost_cb (GDBusConnection *connection,
-                              const gchar     *name,
-                              gpointer         user_data)
+search_provider_dispose (GObject *obj)
 {
-	g_debug ("Search provider name lost: %s", name);
+	GsShellSearchProvider *self = GS_SHELL_SEARCH_PROVIDER (obj);
+
+	if (self->cancellable != NULL) {
+		g_cancellable_cancel (self->cancellable);
+		g_clear_object (&self->cancellable);
+	}
+
+	if (self->metas_cache != NULL) {
+		g_hash_table_destroy (self->metas_cache);
+		self->metas_cache = NULL;
+	}
+
+	g_clear_object (&self->plugin_loader);
+	g_clear_object (&self->skeleton);
+
+	G_OBJECT_CLASS (gs_shell_search_provider_parent_class)->dispose (obj);
 }
 
 static void
-search_provider_bus_acquired_cb (GDBusConnection *connection,
-                                 const gchar *name,
-                                 gpointer user_data)
+gs_shell_search_provider_init (GsShellSearchProvider *self)
 {
-	GsShellSearchProvider *self = user_data;
+	self->metas_cache = g_hash_table_new_full (g_str_hash, g_str_equal,
+						   g_free, (GDestroyNotify) g_variant_unref);
 
-	self->object_manager = g_dbus_object_manager_server_new ("/org/gnome/Software/SearchProvider");
 	self->skeleton = gs_shell_search_provider2_skeleton_new ();
 
 	g_signal_connect (self->skeleton, "handle-get-initial-result-set",
@@ -306,56 +321,6 @@ search_provider_bus_acquired_cb (GDBusConnection *connection,
 			G_CALLBACK (handle_activate_result), self);
 	g_signal_connect (self->skeleton, "handle-launch-search",
 			G_CALLBACK (handle_launch_search), self);
-
-	g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (self->skeleton),
-					connection,
-					"/org/gnome/Software/SearchProvider", NULL);
-	g_dbus_object_manager_server_set_connection (self->object_manager, connection);
-}
-
-static void
-search_provider_dispose (GObject *obj)
-{
-	GsShellSearchProvider *self = GS_SHELL_SEARCH_PROVIDER (obj);
-
-	if (self->name_owner_id != 0) {
-		g_bus_unown_name (self->name_owner_id);
-		self->name_owner_id = 0;
-	}
-
-	if (self->skeleton != NULL) {
-		g_dbus_interface_skeleton_unexport (G_DBUS_INTERFACE_SKELETON (self->skeleton));
-		g_clear_object (&self->skeleton);
-	}
-
-	if (self->cancellable != NULL) {
-		g_cancellable_cancel (self->cancellable);
-		g_clear_object (&self->cancellable);
-	}
-
-	g_clear_object (&self->object_manager);
-	g_clear_object (&self->plugin_loader);
-	g_clear_object (&self->cancellable);
-	g_hash_table_destroy (self->metas_cache);
-	g_application_release (g_application_get_default ());
-
-	G_OBJECT_CLASS (gs_shell_search_provider_parent_class)->dispose (obj);
-}
-
-static void
-gs_shell_search_provider_init (GsShellSearchProvider *self)
-{
-	self->metas_cache = g_hash_table_new_full (g_str_hash, g_str_equal,
-						   g_free, (GDestroyNotify) g_variant_unref);
-
-	g_application_hold (g_application_get_default ());
-	self->name_owner_id = g_bus_own_name (G_BUS_TYPE_SESSION,
-					"org.gnome.Software.SearchProvider",
-					G_BUS_NAME_OWNER_FLAGS_NONE,
-					search_provider_bus_acquired_cb,
-					search_provider_name_acquired_cb,
-					search_provider_name_lost_cb,
-					self, NULL);
 }
 
 static void

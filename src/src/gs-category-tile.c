@@ -25,51 +25,84 @@
 #include <gtk/gtk.h>
 
 #include "gs-category-tile.h"
+#include "gs-common.h"
 
-struct _GsCategoryTilePrivate
+struct _GsCategoryTile
 {
+	GtkButton	 parent_instance;
+
 	GsCategory	*cat;
 	GtkWidget	*label;
+	GtkWidget	*image;
+	gboolean	 colorful;
 };
 
-G_DEFINE_TYPE_WITH_PRIVATE (GsCategoryTile, gs_category_tile, GTK_TYPE_BUTTON)
+G_DEFINE_TYPE (GsCategoryTile, gs_category_tile, GTK_TYPE_BUTTON)
 
 GsCategory *
 gs_category_tile_get_category (GsCategoryTile *tile)
 {
-	GsCategoryTilePrivate *priv;
-
 	g_return_val_if_fail (GS_IS_CATEGORY_TILE (tile), NULL);
 
-	priv = gs_category_tile_get_instance_private (tile);
-	return priv->cat;
+	return tile->cat;
+}
+
+static void
+gs_category_tile_refresh (GsCategoryTile *tile)
+{
+	GPtrArray *key_colors;
+
+	/* set labels */
+	gtk_label_set_label (GTK_LABEL (tile->label),
+			     gs_category_get_name (tile->cat));
+	gtk_image_set_from_icon_name (GTK_IMAGE (tile->image),
+				      gs_category_get_icon (tile->cat),
+				      GTK_ICON_SIZE_MENU);
+
+	/* set custom CSS for colorful tiles */
+	key_colors = gs_category_get_key_colors (tile->cat);
+	if (tile->colorful && key_colors->len > 0) {
+		GdkRGBA *tmp = g_ptr_array_index (key_colors, 0);
+		g_autofree gchar *css = NULL;
+		g_autofree gchar *color = gdk_rgba_to_string (tmp);;
+		css = g_strdup_printf ("border-bottom: 3px solid %s", color);
+		gs_utils_widget_set_css_simple (GTK_WIDGET (tile), css);
+	} else {
+		gs_utils_widget_set_css_simple (GTK_WIDGET (tile), NULL);
+	}
 }
 
 void
 gs_category_tile_set_category (GsCategoryTile *tile, GsCategory *cat)
 {
-	GsCategoryTilePrivate *priv;
-
 	g_return_if_fail (GS_IS_CATEGORY_TILE (tile));
 	g_return_if_fail (GS_IS_CATEGORY (cat));
 
-	priv = gs_category_tile_get_instance_private (tile);
+	g_set_object (&tile->cat, cat);
+	gs_category_tile_refresh (tile);
+}
 
-	g_clear_object (&priv->cat);
-	priv->cat = g_object_ref (cat);
+gboolean
+gs_category_tile_get_colorful (GsCategoryTile *tile)
+{
+	g_return_val_if_fail (GS_IS_CATEGORY_TILE (tile), FALSE);
+	return tile->colorful;
+}
 
-	gtk_label_set_label (GTK_LABEL (priv->label), gs_category_get_name (cat));
+void
+gs_category_tile_set_colorful (GsCategoryTile *tile, gboolean colorful)
+{
+	g_return_if_fail (GS_IS_CATEGORY_TILE (tile));
+	tile->colorful = colorful;
+	gs_category_tile_refresh (tile);
 }
 
 static void
 gs_category_tile_destroy (GtkWidget *widget)
 {
 	GsCategoryTile *tile = GS_CATEGORY_TILE (widget);
-	GsCategoryTilePrivate *priv;
 
-	priv = gs_category_tile_get_instance_private (tile);
-
-	g_clear_object (&priv->cat);
+	g_clear_object (&tile->cat);
 
 	GTK_WIDGET_CLASS (gs_category_tile_parent_class)->destroy (widget);
 }
@@ -88,9 +121,10 @@ gs_category_tile_class_init (GsCategoryTileClass *klass)
 
 	widget_class->destroy = gs_category_tile_destroy;
 
-	gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/Software/category-tile.ui");
+	gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/Software/gs-category-tile.ui");
 
-	gtk_widget_class_bind_template_child_private (widget_class, GsCategoryTile, label);
+	gtk_widget_class_bind_template_child (widget_class, GsCategoryTile, label);
+	gtk_widget_class_bind_template_child (widget_class, GsCategoryTile, image);
 }
 
 GtkWidget *

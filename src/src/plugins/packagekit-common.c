@@ -21,15 +21,12 @@
 
 #include "config.h"
 
-#define I_KNOW_THE_PACKAGEKIT_GLIB2_API_IS_SUBJECT_TO_CHANGE
 #include <packagekit-glib2/packagekit.h>
-#include <gs-plugin.h>
+
+#include <gnome-software.h>
 
 #include "packagekit-common.h"
 
-/**
- * packagekit_status_enum_to_plugin_status:
- **/
 GsPluginStatus
 packagekit_status_enum_to_plugin_status (PkStatusEnum status)
 {
@@ -50,6 +47,7 @@ packagekit_status_enum_to_plugin_status (PkStatusEnum status)
 	case PK_STATUS_ENUM_TEST_COMMIT:
 	case PK_STATUS_ENUM_RUNNING:
 	case PK_STATUS_ENUM_SIG_CHECK:
+	case PK_STATUS_ENUM_REFRESH_CACHE:
 		plugin_status = GS_PLUGIN_STATUS_SETUP;
 		break;
 	case PK_STATUS_ENUM_DOWNLOAD:
@@ -82,36 +80,129 @@ packagekit_status_enum_to_plugin_status (PkStatusEnum status)
 	return plugin_status;
 }
 
-/**
- * gs_plugin_packagekit_add_results:
- */
 gboolean
-gs_plugin_packagekit_add_results (GsPlugin *plugin,
-				  GList **list,
-				  PkResults *results,
-				  GError **error)
+gs_plugin_packagekit_convert_gerror (GError **error)
 {
-	const gchar *package_id;
-	gboolean ret = TRUE;
-	GHashTable *installed = NULL;
-	GPtrArray *array = NULL;
-	GPtrArray *array_filtered = NULL;
-	GsApp *app;
-	guint i;
-	PkError *error_code = NULL;
-	PkPackage *package;
+	GError *error_tmp;
+
+	if (error == NULL)
+		return FALSE;
+	error_tmp = *error;
+	if (error_tmp == NULL)
+		return FALSE;
+
+	/* get a local version */
+	if (error_tmp->domain != PK_CLIENT_ERROR)
+		return FALSE;
+
+	/* daemon errors */
+	if (error_tmp->code <= 0xff) {
+		switch (error_tmp->code) {
+		case PK_CLIENT_ERROR_CANNOT_START_DAEMON:
+		case PK_CLIENT_ERROR_INVALID_FILE:
+		case PK_CLIENT_ERROR_NOT_SUPPORTED:
+			error_tmp->code = GS_PLUGIN_ERROR_NOT_SUPPORTED;
+			break;
+		default:
+			error_tmp->code = GS_PLUGIN_ERROR_FAILED;
+			break;
+		}
+
+	/* backend errors */
+	} else {
+		switch (error_tmp->code - 0xff) {
+		case PK_ERROR_ENUM_INVALID_PACKAGE_FILE:
+		case PK_ERROR_ENUM_NOT_SUPPORTED:
+		case PK_ERROR_ENUM_PACKAGE_INSTALL_BLOCKED:
+			error_tmp->code = GS_PLUGIN_ERROR_NOT_SUPPORTED;
+			break;
+		case PK_ERROR_ENUM_NO_CACHE:
+		case PK_ERROR_ENUM_NO_NETWORK:
+			error_tmp->code = GS_PLUGIN_ERROR_NO_NETWORK;
+			break;
+		case PK_ERROR_ENUM_PACKAGE_DOWNLOAD_FAILED:
+		case PK_ERROR_ENUM_NO_MORE_MIRRORS_TO_TRY:
+		case PK_ERROR_ENUM_CANNOT_FETCH_SOURCES:
+			error_tmp->code = GS_PLUGIN_ERROR_DOWNLOAD_FAILED;
+			break;
+		case PK_ERROR_ENUM_BAD_GPG_SIGNATURE:
+		case PK_ERROR_ENUM_CANNOT_INSTALL_REPO_UNSIGNED:
+		case PK_ERROR_ENUM_CANNOT_UPDATE_REPO_UNSIGNED:
+		case PK_ERROR_ENUM_GPG_FAILURE:
+		case PK_ERROR_ENUM_MISSING_GPG_SIGNATURE:
+		case PK_ERROR_ENUM_NO_LICENSE_AGREEMENT:
+		case PK_ERROR_ENUM_NOT_AUTHORIZED:
+		case PK_ERROR_ENUM_RESTRICTED_DOWNLOAD:
+			error_tmp->code = GS_PLUGIN_ERROR_NO_SECURITY;
+			break;
+		case PK_ERROR_ENUM_NO_SPACE_ON_DEVICE:
+			error_tmp->code = GS_PLUGIN_ERROR_NO_SPACE;
+			break;
+		case PK_ERROR_ENUM_CANCELLED_PRIORITY:
+		case PK_ERROR_ENUM_TRANSACTION_CANCELLED:
+			error_tmp->code = GS_PLUGIN_ERROR_CANCELLED;
+			break;
+		default:
+			error_tmp->code = GS_PLUGIN_ERROR_FAILED;
+			break;
+		}
+	}
+	error_tmp->domain = GS_PLUGIN_ERROR;
+	return TRUE;
+}
+
+gboolean
+gs_plugin_packagekit_results_valid (PkResults *results, GError **error)
+{
+	g_autoptr(PkError) error_code = NULL;
+
+	/* method failed? */
+	if (results == NULL) {
+		gs_plugin_packagekit_convert_gerror (error);
+		return FALSE;
+	}
 
 	/* check error code */
 	error_code = pk_results_get_error_code (results);
 	if (error_code != NULL) {
-		ret = FALSE;
+		g_set_error_literal (error,
+				     PK_CLIENT_ERROR,
+				     pk_error_get_code (error_code),
+				     pk_error_get_details (error_code));
+		return FALSE;
+	}
+
+	/* all good */
+	return TRUE;
+}
+
+gboolean
+gs_plugin_packagekit_add_results (GsPlugin *plugin,
+				  GsAppList *list,
+				  PkResults *results,
+				  GError **error)
+{
+	const gchar *package_id;
+	guint i;
+	PkPackage *package;
+	g_autoptr(GHashTable) installed = NULL;
+	g_autoptr(PkError) error_code = NULL;
+	g_autoptr(GPtrArray) array_filtered = NULL;
+	g_autoptr(GPtrArray) array = NULL;
+
+	g_return_val_if_fail (GS_IS_PLUGIN (plugin), FALSE);
+	g_return_val_if_fail (GS_IS_APP_LIST (list), FALSE);
+
+	/* check error code */
+	error_code = pk_results_get_error_code (results);
+	if (error_code != NULL) {
 		g_set_error (error,
 			     GS_PLUGIN_ERROR,
-			     GS_PLUGIN_ERROR_FAILED,
+			     GS_PLUGIN_ERROR_INVALID_FORMAT,
 			     "failed to get-packages: %s, %s",
 			     pk_error_enum_to_string (pk_error_get_code (error_code)),
 			     pk_error_get_details (error_code));
-		goto out;
+		return FALSE;
 	}
 
 	/* add all installed packages to a hash */
@@ -142,6 +233,7 @@ gs_plugin_packagekit_add_results (GsPlugin *plugin,
 
 	/* process packages */
 	for (i = 0; i < array_filtered->len; i++) {
+		g_autoptr(GsApp) app = NULL;
 		package = g_ptr_array_index (array_filtered, i);
 
 		app = gs_app_new (NULL);
@@ -153,7 +245,9 @@ gs_plugin_packagekit_add_results (GsPlugin *plugin,
 		gs_app_set_summary (app,
 				    GS_APP_QUALITY_LOWEST,
 				    pk_package_get_summary (package));
-		gs_app_set_management_plugin (app, "PackageKit");
+		gs_app_set_metadata (app, "GnomeSoftware::Creator",
+				     gs_plugin_get_name (plugin));
+		gs_app_set_management_plugin (app, "packagekit");
 		gs_app_set_version (app, pk_package_get_version (package));
 		switch (pk_package_get_info (package)) {
 		case PK_INFO_ENUM_INSTALLED:
@@ -162,23 +256,23 @@ gs_plugin_packagekit_add_results (GsPlugin *plugin,
 		case PK_INFO_ENUM_AVAILABLE:
 			gs_app_set_state (app, AS_APP_STATE_AVAILABLE);
 			break;
+		case PK_INFO_ENUM_INSTALLING:
+		case PK_INFO_ENUM_UPDATING:
+		case PK_INFO_ENUM_DOWNGRADING:
+		case PK_INFO_ENUM_OBSOLETING:
+		case PK_INFO_ENUM_UNTRUSTED:
+			break;
+		case PK_INFO_ENUM_UNAVAILABLE:
+		case PK_INFO_ENUM_REMOVING:
+			gs_app_set_state (app, AS_APP_STATE_UNAVAILABLE);
+			break;
 		default:
 			gs_app_set_state (app, AS_APP_STATE_UNKNOWN);
 			g_warning ("unknown info state of %s",
 				   pk_info_enum_to_string (pk_package_get_info (package)));
 		}
-		gs_app_set_kind (app, GS_APP_KIND_PACKAGE);
-		gs_plugin_add_app (list, app);
-		g_object_unref (app);
+		gs_app_set_kind (app, AS_APP_KIND_GENERIC);
+		gs_app_list_add (list, app);
 	}
-out:
-	if (installed != NULL)
-		g_hash_table_unref (installed);
-	if (error_code != NULL)
-		g_object_unref (error_code);
-	if (array != NULL)
-		g_ptr_array_unref (array);
-	if (array_filtered != NULL)
-		g_ptr_array_unref (array_filtered);
-	return ret;
+	return TRUE;
 }

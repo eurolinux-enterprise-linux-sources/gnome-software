@@ -26,26 +26,11 @@
 
 #include "gs-app.h"
 
-#define GS_TYPE_APP_ROW			(gs_app_row_get_type())
-#define GS_APP_ROW(obj)			(G_TYPE_CHECK_INSTANCE_CAST((obj), GS_TYPE_APP_ROW, GsAppRow))
-#define GS_APP_ROW_CLASS(cls)		(G_TYPE_CHECK_CLASS_CAST((cls), GS_TYPE_APP_ROW, GsAppRowClass))
-#define GS_IS_APP_ROW(obj)		(G_TYPE_CHECK_INSTANCE_TYPE((obj), GS_TYPE_APP_ROW))
-#define GS_IS_APP_ROW_CLASS(cls)	(G_TYPE_CHECK_CLASS_TYPE((cls), GS_TYPE_APP_ROW))
-#define GS_APP_ROW_GET_CLASS(obj)	(G_TYPE_INSTANCE_GET_CLASS((obj), GS_TYPE_APP_ROW, GsAppRowClass))
-
 G_BEGIN_DECLS
 
-typedef struct _GsAppRow		GsAppRow;
-typedef struct _GsAppRowClass		GsAppRowClass;
-typedef struct _GsAppRowPrivate		GsAppRowPrivate;
+#define GS_TYPE_APP_ROW (gs_app_row_get_type ())
 
-struct _GsAppRow
-{
-	GtkListBoxRow		 parent;
-
-	/*< private >*/
-	GsAppRowPrivate		*priv;
-};
+G_DECLARE_DERIVABLE_TYPE (GsAppRow, gs_app_row, GS, APP_ROW, GtkListBoxRow)
 
 struct _GsAppRowClass
 {
@@ -54,12 +39,21 @@ struct _GsAppRowClass
 	void			(*unrevealed)		(GsAppRow	*app_row);
 };
 
-GType		 gs_app_row_get_type			(void);
-GtkWidget	*gs_app_row_new				(void);
+GtkWidget	*gs_app_row_new				(GsApp		*app);
 void		 gs_app_row_refresh			(GsAppRow	*app_row);
 void		 gs_app_row_unreveal			(GsAppRow	*app_row);
 void		 gs_app_row_set_colorful		(GsAppRow	*app_row,
 							 gboolean	 colorful);
+void		 gs_app_row_set_show_folders		(GsAppRow	*app_row,
+							 gboolean	 show_folders);
+void		 gs_app_row_set_show_buttons		(GsAppRow	*app_row,
+							 gboolean	 show_buttons);
+void		 gs_app_row_set_show_sandbox		(GsAppRow	*app_row,
+							 gboolean	 show_sandbox);
+void		 gs_app_row_set_show_source		(GsAppRow	*app_row,
+							 gboolean	 show_source);
+void		 gs_app_row_set_show_codec		(GsAppRow	*app_row,
+							 gboolean	 show_codec);
 void		 gs_app_row_set_show_update		(GsAppRow	*app_row,
 							 gboolean	 show_update);
 void		 gs_app_row_set_selectable 		(GsAppRow	*app_row,
@@ -68,8 +62,6 @@ void		 gs_app_row_set_selected		(GsAppRow	*app_row,
 							 gboolean        selected);
 gboolean	 gs_app_row_get_selected		(GsAppRow	*app_row);
 GsApp		*gs_app_row_get_app			(GsAppRow	*app_row);
-void		 gs_app_row_set_app			(GsAppRow	*app_row,
-							 GsApp		*app);
 void		 gs_app_row_set_size_groups		(GsAppRow	*app_row,
 							 GtkSizeGroup	*image,
 							 GtkSizeGroup	*name);

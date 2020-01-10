@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2013 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2013-2016 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -23,22 +23,21 @@
 #define __GS_UPDATE_MONITOR_H
 
 #include <glib-object.h>
+
 #include "gs-application.h"
+#include "gs-shell.h"
 
 G_BEGIN_DECLS
 
-#define GS_TYPE_UPDATE_MONITOR		(gs_update_monitor_get_type ())
-#define GS_UPDATE_MONITOR(o)		(G_TYPE_CHECK_INSTANCE_CAST ((o), GS_TYPE_UPDATE_MONITOR, GsUpdateMonitor))
-#define GS_UPDATE_MONITOR_CLASS(k)	(G_TYPE_CHECK_CLASS_CAST((k), GS_TYPE_UPDATE_MONITOR, GsUpdateMonitorClass))
-#define GS_IS_UPDATE_MONITOR(o)		(G_TYPE_CHECK_INSTANCE_TYPE ((o), GS_TYPE_UPDATE_MONITOR))
-#define GS_IS_UPDATE_MONITOR_CLASS(k)	(G_TYPE_CHECK_CLASS_TYPE ((k), GS_TYPE_UPDATE_MONITOR))
-#define GS_UPDATE_MONITOR_GET_CLASS(o)	(G_TYPE_INSTANCE_GET_CLASS ((o), GS_TYPE_UPDATE_MONITOR, GsUpdateMonitorClass))
+#define GS_TYPE_UPDATE_MONITOR (gs_update_monitor_get_type ())
 
-typedef struct _GsUpdateMonitor		GsUpdateMonitor;
-typedef struct _GsUpdateMonitorClass	GsUpdateMonitorClass;
+G_DECLARE_FINAL_TYPE (GsUpdateMonitor, gs_update_monitor, GS, UPDATE_MONITOR, GObject)
 
-GType		 gs_update_monitor_get_type	(void);
-GsUpdateMonitor	*gs_update_monitor_new		(GsApplication *app);
+GsUpdateMonitor	*gs_update_monitor_new			(GsApplication	*app);
+void		 gs_update_monitor_show_error		(GsUpdateMonitor *monitor,
+							 GsShell	*shell);
+GPermission	*gs_update_monitor_permission_get	(void);
+gboolean	 gs_update_monitor_is_managed		(void);
 
 G_END_DECLS
 

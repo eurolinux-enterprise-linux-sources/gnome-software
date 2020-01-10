@@ -26,46 +26,31 @@
 #include <gtk/gtk.h>
 
 #include "gs-app.h"
+#include "gs-page.h"
 #include "gs-shell.h"
 #include "gs-plugin-loader.h"
 
 G_BEGIN_DECLS
 
-#define GS_TYPE_SHELL_OVERVIEW		(gs_shell_overview_get_type ())
-#define GS_SHELL_OVERVIEW(o)		(G_TYPE_CHECK_INSTANCE_CAST ((o), GS_TYPE_SHELL_OVERVIEW, GsShellOverview))
-#define GS_SHELL_OVERVIEW_CLASS(k)	(G_TYPE_CHECK_CLASS_CAST((k), GS_TYPE_SHELL_OVERVIEW, GsShellOverviewClass))
-#define GS_IS_SHELL_OVERVIEW(o)		(G_TYPE_CHECK_INSTANCE_TYPE ((o), GS_TYPE_SHELL_OVERVIEW))
-#define GS_IS_SHELL_OVERVIEW_CLASS(k)	(G_TYPE_CHECK_CLASS_TYPE ((k), GS_TYPE_SHELL_OVERVIEW))
-#define GS_SHELL_OVERVIEW_GET_CLASS(o)	(G_TYPE_INSTANCE_GET_CLASS ((o), GS_TYPE_SHELL_OVERVIEW, GsShellOverviewClass))
+#define GS_TYPE_SHELL_OVERVIEW (gs_shell_overview_get_type ())
 
-typedef struct GsShellOverviewPrivate GsShellOverviewPrivate;
+G_DECLARE_DERIVABLE_TYPE (GsShellOverview, gs_shell_overview, GS, SHELL_OVERVIEW, GsPage)
 
-typedef struct
+struct _GsShellOverviewClass
 {
-	 GtkBin			 parent;
-	 GsShellOverviewPrivate	*priv;
-} GsShellOverview;
+	GsPageClass		 parent_class;
 
-typedef struct
-{
-	GtkBinClass		 parent_class;
-
-	void	(*refreshed)	(GsShellOverview *shell);
-} GsShellOverviewClass;
-
-GType		 gs_shell_overview_get_type	(void);
+	void	(*refreshed)	(GsShellOverview *self);
+};
 
 GsShellOverview	*gs_shell_overview_new		(void);
-void		 gs_shell_overview_invalidate	(GsShellOverview	*shell_overview);
-void		 gs_shell_overview_switch_to	(GsShellOverview	*shell_overview,
-						 gboolean		scroll_up);
-void		 gs_shell_overview_reload	(GsShellOverview	*shell_overview);
-void		 gs_shell_overview_setup	(GsShellOverview	*shell_overview,
+void		 gs_shell_overview_invalidate	(GsShellOverview	*self);
+void		 gs_shell_overview_setup	(GsShellOverview	*self,
 						 GsShell		*shell,
 						 GsPluginLoader		*plugin_loader,
 						 GtkBuilder		*builder,
 						 GCancellable		*cancellable);
-void		 gs_shell_overview_set_category	(GsShellOverview	*shell_overview,
+void		 gs_shell_overview_set_category	(GsShellOverview	*self,
 						 const gchar		*category);
 
 G_END_DECLS

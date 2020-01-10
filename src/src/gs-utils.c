@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2013 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2013-2016 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -19,367 +19,488 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+/**
+ * SECTION:gs-utils
+ * @title: GsUtils
+ * @include: gnome-software.h
+ * @stability: Unstable
+ * @short_description: Utilities that plugins can use
+ *
+ * These functions provide useful functionality that makes it easy to
+ * add new plugin functions.
+ */
+
 #include "config.h"
 
-#include <glib/gi18n.h>
-#include <gio/gdesktopappinfo.h>
 #include <errno.h>
+#include <fnmatch.h>
+#include <math.h>
+#include <glib/gstdio.h>
+
+#ifdef HAVE_POLKIT
+#include <polkit/polkit.h>
+#endif
 
 #include "gs-app.h"
 #include "gs-utils.h"
 #include "gs-plugin.h"
 
-#define SPINNER_DELAY 500
-
-static gboolean
-fade_in (gpointer data)
-{
-	GtkWidget *spinner = data;
-	gdouble opacity;
-
-	opacity = gtk_widget_get_opacity (spinner);
-	opacity = opacity + 0.1;
-	gtk_widget_set_opacity (spinner, opacity);
-
-	if (opacity >= 1.0) {
-		g_object_steal_data (G_OBJECT (spinner), "fade-timeout");
-		return G_SOURCE_REMOVE;
-	}
-	return G_SOURCE_CONTINUE;
-}
-
-static void
-remove_source (gpointer data)
-{
-	g_source_remove (GPOINTER_TO_UINT (data));
-}
-
-static gboolean
-start_spinning (gpointer data)
-{
-	GtkWidget *spinner = data;
-	guint id;
-
-	gtk_widget_set_opacity (spinner, 0);
-	gtk_spinner_start (GTK_SPINNER (spinner));
-	id = g_timeout_add (100, fade_in, spinner);
-	g_object_set_data_full (G_OBJECT (spinner), "fade-timeout",
-				GUINT_TO_POINTER (id), remove_source);
-
-	/* don't try to remove this source in the future */
-	g_object_steal_data (G_OBJECT (spinner), "start-timeout");
-	return G_SOURCE_REMOVE;
-}
-
-void
-gs_stop_spinner (GtkSpinner *spinner)
-{
-	gtk_spinner_stop (spinner);
-}
-
-void
-gs_start_spinner (GtkSpinner *spinner)
-{
-	gboolean active;
-	guint id;
-
-	/* Don't do anything if it's already spinning */
-	g_object_get (spinner, "active", &active, NULL);
-	if (active || g_object_get_data (G_OBJECT (spinner), "start-timeout") != NULL)
-		return;
-
-	gtk_widget_set_opacity (GTK_WIDGET (spinner), 0);
-	id = g_timeout_add (SPINNER_DELAY, start_spinning, spinner);
-	g_object_set_data_full (G_OBJECT (spinner), "start-timeout",
-				GUINT_TO_POINTER (id), remove_source);
-}
-
-static void
-remove_all_cb (GtkWidget *widget, gpointer user_data)
-{
-	GtkContainer *container = GTK_CONTAINER (user_data);
-	gtk_container_remove (container, widget);
-}
-
-void
-gs_container_remove_all (GtkContainer *container)
-{
-	gtk_container_foreach (container, remove_all_cb, container);
-}
-
-static void
-grab_focus (GtkWidget *widget)
-{
-	g_signal_handlers_disconnect_by_func (widget, grab_focus, NULL);
-	gtk_widget_grab_focus (widget);
-}
-
-void
-gs_grab_focus_when_mapped (GtkWidget *widget)
-{
-	if (gtk_widget_get_mapped (widget))
-		gtk_widget_grab_focus (widget);
-	else
-		g_signal_connect_after (widget, "map",
-					G_CALLBACK (grab_focus), NULL);
-}
-
-void
-gs_app_notify_installed (GsApp *app)
-{
-	gchar *summary;
-	GNotification *n;
-
-	/* TRANSLATORS: this is the summary of a notification that an application
-	 * has been successfully installed */
-	summary = g_strdup_printf (_("%s is now installed"), gs_app_get_name (app));
-	n = g_notification_new (summary);
-	if (gs_app_get_id_kind (app) == AS_ID_KIND_DESKTOP) {
-		/* TRANSLATORS: this is button that opens the newly installed application */
-		g_notification_add_button_with_target (n, _("Launch"),
-						       "app.launch", "s",
-						       gs_app_get_id (app));
-	}
-	g_notification_set_default_action_and_target  (n, "app.details", "(ss)",
-						       gs_app_get_id (app), "");
-	g_application_send_notification (g_application_get_default (), "installed", n);
-	g_object_unref (n);
-	g_free (summary);
-}
-
-/**
- * gs_app_notify_failed_modal:
- **/
-void
-gs_app_notify_failed_modal (GsApp *app,
-			    GtkWindow *parent_window,
-			    GsPluginLoaderAction action,
-			    const GError *error)
-{
-	GtkWidget *dialog;
-	gchar *title;
-	gchar *msg;
-
-	title = _("Sorry, this did not work");
-	switch (action) {
-	case GS_PLUGIN_LOADER_ACTION_INSTALL:
-		/* TRANSLATORS: this is when the install fails */
-		msg = g_strdup_printf (_("Installation of %s failed."),
-				       gs_app_get_name (app));
-		break;
-	case GS_PLUGIN_LOADER_ACTION_REMOVE:
-		/* TRANSLATORS: this is when the remove fails */
-		msg = g_strdup_printf (_("Removal of %s failed."),
-				       gs_app_get_name (app));
-		break;
-	default:
-		g_assert_not_reached ();
-		break;
-	}
-	dialog = gtk_message_dialog_new (parent_window,
-					 GTK_DIALOG_MODAL |
-					 GTK_DIALOG_DESTROY_WITH_PARENT,
-					 GTK_MESSAGE_ERROR,
-					 GTK_BUTTONS_CLOSE,
-					 "%s", title);
-	gtk_message_dialog_format_secondary_text (GTK_MESSAGE_DIALOG (dialog),
-						  "%s", msg);
-	g_signal_connect (dialog, "response",
-			  G_CALLBACK (gtk_widget_destroy), NULL);
-	gtk_window_present (GTK_WINDOW (dialog));
-}
-
-guint
-gs_string_replace (GString *string, const gchar *search, const gchar *replace)
-{
-	gchar *tmp;
-	guint count = 0;
-	guint replace_len;
-	guint search_len;
-
-	search_len = strlen (search);
-	replace_len = strlen (replace);
-
-	do {
-		tmp = g_strstr_len (string->str, -1, search);
-		if (tmp == NULL)
-			goto out;
-
-		/* reallocate the string if required */
-		if (search_len > replace_len) {
-			g_string_erase (string,
-					tmp - string->str,
-					search_len - replace_len);
-		}
-		if (search_len < replace_len) {
-			g_string_insert_len (string,
-					    tmp - string->str,
-					    search,
-					    replace_len - search_len);
-		}
-
-		/* just memcmp in the new string */
-		memcpy (tmp, replace, replace_len);
-		count++;
-	} while (TRUE);
-out:
-	return count;
-}
-
 /**
  * gs_mkdir_parent:
+ * @path: A full pathname
+ * @error: A #GError, or %NULL
+ *
+ * Creates any required directories, including any parent directories.
+ *
+ * Returns: %TRUE for success
  **/
 gboolean
 gs_mkdir_parent (const gchar *path, GError **error)
 {
-	gboolean ret = TRUE;
-	gchar *parent;
+	g_autofree gchar *parent = NULL;
 
 	parent = g_path_get_dirname (path);
 	if (g_mkdir_with_parents (parent, 0755) == -1) {
-		ret = FALSE;
 		g_set_error (error,
 			     GS_PLUGIN_ERROR,
 			     GS_PLUGIN_ERROR_FAILED,
 			     "Failed to create '%s': %s",
 			     parent, g_strerror (errno));
+		return FALSE;
 	}
-
-	g_free (parent);
-	return ret;
-}
-
-static GtkIconTheme *icon_theme_singleton;
-static GMutex        icon_theme_lock;
-static GHashTable   *icon_theme_paths;
-
-static GtkIconTheme *
-icon_theme_get (void)
-{
-	if (icon_theme_singleton == NULL)
-		icon_theme_singleton = gtk_icon_theme_new ();
-
-	return icon_theme_singleton;
-}
-
-static void
-icon_theme_add_path (const gchar *path)
-{
-	if (path == NULL)
-		return;
-
-	if (icon_theme_paths == NULL)
-		icon_theme_paths = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-
-	if (!g_hash_table_contains (icon_theme_paths, path)) {
-		gtk_icon_theme_prepend_search_path (icon_theme_get (), path);
-		g_hash_table_add (icon_theme_paths, g_strdup (path));
-	}
+	return TRUE;
 }
 
 /**
- * gs_pixbuf_load:
- **/
-GdkPixbuf *
-gs_pixbuf_load (const gchar *icon_name,
-		const gchar *icon_path,
-		guint icon_size,
-		GError **error)
+ * gs_utils_get_file_age:
+ * @file: A #GFile
+ *
+ * Gets a file age.
+ *
+ * Returns: The time in seconds since the file was modified, or %G_MAXUINT for error
+ */
+guint
+gs_utils_get_file_age (GFile *file)
 {
-	GdkPixbuf *pixbuf = NULL;
+	guint64 now;
+	guint64 mtime;
+	g_autoptr(GFileInfo) info = NULL;
 
-	g_return_val_if_fail (icon_name != NULL, NULL);
-	g_return_val_if_fail (icon_size > 0, NULL);
-
-	if (icon_name[0] == '\0') {
-		g_set_error_literal (error,
-				     GS_PLUGIN_ERROR,
-				     GS_PLUGIN_ERROR_FAILED,
-				     "Icon name not specified");
-	} else if (icon_name[0] == '/') {
-		pixbuf = gdk_pixbuf_new_from_file_at_size (icon_name,
-							   icon_size,
-							   icon_size,
-							   error);
-	} else {
-		g_mutex_lock (&icon_theme_lock);
-		icon_theme_add_path (icon_path);
-		pixbuf = gtk_icon_theme_load_icon (icon_theme_get (),
-						   icon_name,
-						   icon_size,
-						   GTK_ICON_LOOKUP_USE_BUILTIN |
-						   GTK_ICON_LOOKUP_FORCE_SIZE,
-						   error);
-		g_mutex_unlock (&icon_theme_lock);
-	}
-	return pixbuf;
-}
-
-static void
-reboot_done (GObject *source, GAsyncResult *res, gpointer data)
-{
-	GCallback reboot_failed = data;
-	GVariant *ret;
-	GError *error = NULL;
-
-	ret = g_dbus_connection_call_finish (G_DBUS_CONNECTION (source), res, &error);
-	if (ret) {
-		g_variant_unref (ret);
-		return;
-	}
-
-	if (error) {
-		g_warning ("Calling org.gnome.SessionManager.Reboot failed: %s", error->message);
-		g_error_free (error);
-	}
-
-	reboot_failed ();
-}
-
-void
-gs_reboot (GCallback reboot_failed)
-{
-	GDBusConnection *bus;
-
-	g_debug ("calling org.gnome.SessionManager.Reboot");
-
-	bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, NULL);
-	g_dbus_connection_call (bus,
-				"org.gnome.SessionManager",
-				"/org/gnome/SessionManager",
-				"org.gnome.SessionManager",
-				"Reboot",
-				NULL,
-				NULL,
-				G_DBUS_CALL_FLAGS_NONE,
-				G_MAXINT,
-				NULL,
-				reboot_done,
-				reboot_failed);
-	g_object_unref (bus);
+	info = g_file_query_info (file,
+				  G_FILE_ATTRIBUTE_TIME_MODIFIED,
+				  G_FILE_QUERY_INFO_NONE,
+				  NULL,
+				  NULL);
+	if (info == NULL)
+		return G_MAXUINT;
+	mtime = g_file_info_get_attribute_uint64 (info, G_FILE_ATTRIBUTE_TIME_MODIFIED);
+	now = (guint64) g_get_real_time () / G_USEC_PER_SEC;
+	if (mtime > now)
+		return G_MAXUINT;
+	if (now - mtime > G_MAXUINT)
+		return G_MAXUINT;
+	return (guint) (now - mtime);
 }
 
 /**
- * gs_image_set_from_pixbuf_with_scale:
+ * gs_utils_get_cache_filename:
+ * @kind: A cache kind, e.g. "firmware" or "screenshots/123x456"
+ * @basename: A filename basename, e.g. "system.bin"
+ * @flags: Some #GsUtilsCacheFlags, e.g. %GS_UTILS_CACHE_FLAG_WRITEABLE
+ * @error: A #GError, or %NULL
+ *
+ * Returns a filename that points into the cache.
+ * This may be per-system or per-user, the latter being more likely
+ * when %GS_UTILS_CACHE_FLAG_WRITEABLE is specified in @flags.
+ *
+ * Returns: The full path and filename, which may or may not exist, or %NULL
  **/
-void
-gs_image_set_from_pixbuf_with_scale (GtkImage *image, const GdkPixbuf *pixbuf, gint scale)
+gchar *
+gs_utils_get_cache_filename (const gchar *kind,
+			     const gchar *basename,
+			     GsUtilsCacheFlags flags, /* ignored */
+			     GError **error)
 {
-	cairo_surface_t *surface;
-	surface = gdk_cairo_surface_create_from_pixbuf (pixbuf, scale, NULL);
-	gtk_image_set_from_surface (image, surface);
-	cairo_surface_destroy (surface);
+	g_autofree gchar *cachedir = NULL;
+	g_autofree gchar *vername = NULL;
+	g_auto(GStrv) version = g_strsplit (VERSION, ".", 3);
+	g_autoptr(GFile) cachedir_file = NULL;
+
+	/* not writable, so try the system cache first */
+	if ((flags & GS_UTILS_CACHE_FLAG_WRITEABLE) == 0) {
+		g_autofree gchar *cachefn = NULL;
+		cachefn = g_build_filename (LOCALSTATEDIR,
+					    "cache",
+					    "gnome-software",
+		                            kind,
+					    basename,
+					    NULL);
+		if (g_file_test (cachefn, G_FILE_TEST_EXISTS))
+			return g_steal_pointer (&cachefn);
+	}
+
+	/* not writable, so try the system cache first */
+	if ((flags & GS_UTILS_CACHE_FLAG_WRITEABLE) == 0) {
+		g_autofree gchar *cachefn = NULL;
+		cachefn = g_build_filename (DATADIR,
+					    "gnome-software",
+					    "cache",
+					    kind,
+					    basename,
+					    NULL);
+		if (g_file_test (cachefn, G_FILE_TEST_EXISTS))
+			return g_steal_pointer (&cachefn);
+	}
+
+	/* create the cachedir in a per-release location, creating
+	 * if it does not already exist */
+	vername = g_strdup_printf ("%s.%s", version[0], version[1]);
+	cachedir = g_build_filename (g_get_user_cache_dir (),
+				     "gnome-software",
+				     vername,
+				     kind,
+				     NULL);
+	cachedir_file = g_file_new_for_path (cachedir);
+	if (!g_file_query_exists (cachedir_file, NULL) &&
+	    !g_file_make_directory_with_parents (cachedir_file, NULL, error))
+		return NULL;
+	return g_build_filename (cachedir, basename, NULL);
 }
 
 /**
- * gs_image_set_from_pixbuf:
- **/
-void
-gs_image_set_from_pixbuf (GtkImage *image, const GdkPixbuf *pixbuf)
+ * gs_utils_get_user_hash:
+ * @error: A #GError, or %NULL
+ *
+ * This SHA1 hash is composed of the contents of machine-id and your
+ * usename and is also salted with a hardcoded value.
+ *
+ * This provides an identifier that can be used to identify a specific
+ * user on a machine, allowing them to cast only one vote or perform
+ * one review on each application.
+ *
+ * There is no known way to calculate the machine ID or username from
+ * the machine hash and there should be no privacy issue.
+ *
+ * Returns: The user hash, or %NULL on error
+ */
+gchar *
+gs_utils_get_user_hash (GError **error)
 {
-	gint scale;
-	scale = gdk_pixbuf_get_width (pixbuf) / 64;
-	gs_image_set_from_pixbuf_with_scale (image, pixbuf, scale);
+	g_autofree gchar *data = NULL;
+	g_autofree gchar *salted = NULL;
+
+	if (!g_file_get_contents ("/etc/machine-id", &data, NULL, error))
+		return NULL;
+
+	salted = g_strdup_printf ("gnome-software[%s:%s]",
+				  g_get_user_name (), data);
+	return g_compute_checksum_for_string (G_CHECKSUM_SHA1, salted, -1);
+}
+
+/**
+ * gs_utils_get_permission:
+ * @id: A PolicyKit ID, e.g. "org.gnome.Desktop"
+ *
+ * Gets a permission object for an ID.
+ *
+ * Returns: a #GPermission, or %NULL if this if not possible.
+ **/
+GPermission *
+gs_utils_get_permission (const gchar *id)
+{
+#ifdef HAVE_POLKIT
+	g_autoptr(GPermission) permission = NULL;
+	g_autoptr(GError) error = NULL;
+
+	permission = polkit_permission_new_sync (id, NULL, NULL, &error);
+	if (permission == NULL) {
+		g_warning ("Failed to create permission %s: %s", id, error->message);
+		return NULL;
+	}
+	return g_steal_pointer (&permission);
+#else
+	g_debug ("no PolicyKit, so can't return GPermission for %s", id);
+	return NULL;
+#endif
+}
+
+/**
+ * gs_utils_get_content_type:
+ * @file: A GFile
+ * @cancellable: A #GCancellable, or %NULL
+ * @error: A #GError, or %NULL
+ *
+ * Gets the standard content type for a file.
+ *
+ * Returns: the content type, or %NULL, e.g. "text/plain"
+ */
+gchar *
+gs_utils_get_content_type (GFile *file,
+			   GCancellable *cancellable,
+			   GError **error)
+{
+	const gchar *tmp;
+	g_autoptr(GFileInfo) info = NULL;
+
+	/* get content type */
+	info = g_file_query_info (file,
+				  G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+				  G_FILE_QUERY_INFO_NONE,
+				  cancellable,
+				  error);
+	if (info == NULL)
+		return NULL;
+	tmp = g_file_info_get_attribute_string (info, G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE);
+	if (tmp == NULL)
+		return NULL;
+	return g_strdup (tmp);
+}
+
+/**
+ * gs_utils_strv_fnmatch:
+ * @strv: A NUL-terminated list of strings
+ * @str: A string
+ *
+ * Matches a string against a list of globs.
+ *
+ * Returns: %TRUE if the list matches
+ */
+gboolean
+gs_utils_strv_fnmatch (gchar **strv, const gchar *str)
+{
+	guint i;
+
+	/* empty */
+	if (strv == NULL)
+		return FALSE;
+
+	/* look at each one */
+	for (i = 0; strv[i] != NULL; i++) {
+		if (fnmatch (strv[i], str, 0) == 0)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/**
+ * gs_utils_get_desktop_app_info:
+ * @id: A desktop ID, e.g. "gimp.desktop"
+ *
+ * Gets a a #GDesktopAppInfo taking into account the kde4- prefix.
+ *
+ * Returns: a #GDesktopAppInfo for a specific ID, or %NULL
+ */
+GDesktopAppInfo *
+gs_utils_get_desktop_app_info (const gchar *id)
+{
+	GDesktopAppInfo *app_info;
+
+	/* try to get the standard app-id */
+	app_info = g_desktop_app_info_new (id);
+
+	/* KDE is a special project because it believes /usr/share/applications
+	 * isn't KDE enough. For this reason we support falling back to the
+	 * "kde4-" prefixed ID to avoid educating various self-righteous
+	 * upstreams about the correct ID to use in the AppData file. */
+	if (app_info == NULL) {
+		g_autofree gchar *kde_id = NULL;
+		kde_id = g_strdup_printf ("%s-%s", "kde4", id);
+		app_info = g_desktop_app_info_new (kde_id);
+	}
+
+	return app_info;
+}
+
+/**
+ * gs_utils_symlink:
+ * @target: the full path of the symlink to create
+ * @linkpath: where the symlink should point to
+ * @error: A #GError, or %NULL
+ *
+ * Creates a symlink that can cross filesystem boundaries.
+ * Any parent directories needed for target to exist are also created.
+ *
+ * Returns: %TRUE for success
+ **/
+gboolean
+gs_utils_symlink (const gchar *target, const gchar *linkpath, GError **error)
+{
+	if (!gs_mkdir_parent (target, error))
+		return FALSE;
+	if (symlink (target, linkpath) != 0) {
+		g_set_error (error,
+			     GS_PLUGIN_ERROR,
+			     GS_PLUGIN_ERROR_WRITE_FAILED,
+			     "failed to create symlink from %s to %s",
+			     linkpath, target);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+/**
+ * gs_utils_unlink:
+ * @filename: A full pathname to delete
+ * @error: A #GError, or %NULL
+ *
+ * Deletes a file from disk.
+ *
+ * Returns: %TRUE for success
+ **/
+gboolean
+gs_utils_unlink (const gchar *filename, GError **error)
+{
+	if (g_unlink (filename) != 0) {
+		g_set_error (error,
+			     GS_PLUGIN_ERROR,
+			     GS_PLUGIN_ERROR_DELETE_FAILED,
+			     "failed to delete %s",
+			     filename);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static gboolean
+gs_utils_rmtree_real (const gchar *directory, GError **error)
+{
+	const gchar *filename;
+	g_autoptr(GDir) dir = NULL;
+
+	/* try to open */
+	dir = g_dir_open (directory, 0, error);
+	if (dir == NULL)
+		return FALSE;
+
+	/* find each */
+	while ((filename = g_dir_read_name (dir))) {
+		g_autofree gchar *src = NULL;
+		src = g_build_filename (directory, filename, NULL);
+		if (g_file_test (src, G_FILE_TEST_IS_DIR) &&
+		    !g_file_test (src, G_FILE_TEST_IS_SYMLINK)) {
+			if (!gs_utils_rmtree_real (src, error))
+				return FALSE;
+		} else {
+			if (g_unlink (src) != 0) {
+				g_set_error (error,
+					     GS_PLUGIN_ERROR,
+					     GS_PLUGIN_ERROR_DELETE_FAILED,
+					     "Failed to delete: %s", src);
+				return FALSE;
+			}
+		}
+	}
+
+	if (g_rmdir (directory) != 0) {
+		g_set_error (error,
+			     GS_PLUGIN_ERROR,
+			     GS_PLUGIN_ERROR_DELETE_FAILED,
+			     "Failed to remove: %s", directory);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+/**
+ * gs_utils_rmtree:
+ * @directory: A full directory pathname to delete
+ * @error: A #GError, or %NULL
+ *
+ * Deletes a directory from disk and all its contents.
+ *
+ * Returns: %TRUE for success
+ **/
+gboolean
+gs_utils_rmtree (const gchar *directory, GError **error)
+{
+	g_debug ("recursively removing directory '%s'", directory);
+	return gs_utils_rmtree_real (directory, error);
+}
+
+static gdouble
+pnormaldist (gdouble qn)
+{
+	static gdouble b[11] = { 1.570796288,      0.03706987906,   -0.8364353589e-3,
+				-0.2250947176e-3,  0.6841218299e-5,  0.5824238515e-5,
+				-0.104527497e-5,   0.8360937017e-7, -0.3231081277e-8,
+				 0.3657763036e-10, 0.6936233982e-12 };
+	gdouble w1, w3;
+	guint i;
+
+	if (qn < 0 || qn > 1)
+		return 0; // This is an error case
+	if (qn == 0.5)
+		return 0;
+
+	w1 = qn;
+	if (qn > 0.5)
+		w1 = 1.0 - w1;
+	w3 = -log (4.0 * w1 * (1.0 - w1));
+	w1 = b[0];
+	for (i = 1; i < 11; i++)
+		w1 = w1 + (b[i] * pow (w3, i));
+
+	if (qn > 0.5)
+		return sqrt (w1 * w3);
+	else
+		return -sqrt (w1 * w3);
+}
+
+static gdouble
+wilson_score (gdouble value, gdouble n, gdouble power)
+{
+	gdouble z, phat;
+	if (value == 0)
+		return 0;
+	z = pnormaldist (1 - power / 2);
+	phat = value / n;
+	return (phat + z * z / (2 * n) -
+		z * sqrt ((phat * (1 - phat) + z * z / (4 * n)) / n)) /
+		(1 + z * z / n);
+}
+
+/**
+ * gs_utils_get_wilson_rating:
+ * @star1: The number of 1 star reviews
+ * @star2: The number of 2 star reviews
+ * @star3: The number of 3 star reviews
+ * @star4: The number of 4 star reviews
+ * @star5: The number of 5 star reviews
+ *
+ * Returns the lower bound of Wilson score confidence interval for a
+ * Bernoulli parameter. This ensures small numbers of ratings don't give overly
+ * high scores.
+ * See https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
+ * for details.
+ *
+ * Returns: Wilson rating percentage, or -1 for error
+ **/
+gint
+gs_utils_get_wilson_rating (guint64 star1,
+			    guint64 star2,
+			    guint64 star3,
+			    guint64 star4,
+			    guint64 star5)
+{
+	gdouble val;
+	guint64 star_sum = star1 + star2 + star3 + star4 + star5;
+	if (star_sum == 0)
+		return -1;
+
+	/* get score */
+	val =  (wilson_score ((gdouble) star1, (gdouble) star_sum, 0.2) * -2);
+	val += (wilson_score ((gdouble) star2, (gdouble) star_sum, 0.2) * -1);
+	val += (wilson_score ((gdouble) star4, (gdouble) star_sum, 0.2) * 1);
+	val += (wilson_score ((gdouble) star5, (gdouble) star_sum, 0.2) * 2);
+
+	/* normalize from -2..+2 to 0..5 */
+	val += 3;
+
+	/* multiply to a percentage */
+	val *= 20;
+
+	/* return rounded up integer */
+	return (gint) ceil (val);
 }
 
 /* vim: set noexpandtab: */

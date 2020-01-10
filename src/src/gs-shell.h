@@ -31,46 +31,43 @@
 
 G_BEGIN_DECLS
 
-#define GS_TYPE_SHELL		(gs_shell_get_type ())
-#define GS_SHELL(o)		(G_TYPE_CHECK_INSTANCE_CAST ((o), GS_TYPE_SHELL, GsShell))
-#define GS_SHELL_CLASS(k)	(G_TYPE_CHECK_CLASS_CAST((k), GS_TYPE_SHELL, GsShellClass))
-#define GS_IS_SHELL(o)		(G_TYPE_CHECK_INSTANCE_TYPE ((o), GS_TYPE_SHELL))
-#define GS_IS_SHELL_CLASS(k)	(G_TYPE_CHECK_CLASS_TYPE ((k), GS_TYPE_SHELL))
-#define GS_SHELL_GET_CLASS(o)	(G_TYPE_INSTANCE_GET_CLASS ((o), GS_TYPE_SHELL, GsShellClass))
+#define GS_TYPE_SHELL (gs_shell_get_type ())
 
-typedef struct GsShellPrivate GsShellPrivate;
+G_DECLARE_DERIVABLE_TYPE (GsShell, gs_shell, GS, SHELL, GObject)
 
-typedef struct
-{
-	 GObject		 parent;
-	 GsShellPrivate		*priv;
-} GsShell;
-
-typedef struct
+struct _GsShellClass
 {
 	GObjectClass			 parent_class;
 
 	void (* loaded)		 (GsShell *shell);
-} GsShellClass;
+};
 
 typedef enum {
+	GS_SHELL_MODE_UNKNOWN,
 	GS_SHELL_MODE_OVERVIEW,
 	GS_SHELL_MODE_INSTALLED,
 	GS_SHELL_MODE_SEARCH,
 	GS_SHELL_MODE_UPDATES,
 	GS_SHELL_MODE_DETAILS,
 	GS_SHELL_MODE_CATEGORY,
+	GS_SHELL_MODE_EXTRAS,
+	GS_SHELL_MODE_MODERATE,
+	GS_SHELL_MODE_LOADING,
 	GS_SHELL_MODE_LAST
 } GsShellMode;
-
-GType		 gs_shell_get_type		(void);
 
 GsShell		*gs_shell_new			(void);
 void		 gs_shell_activate		(GsShell	*shell);
 void		 gs_shell_refresh		(GsShell	*shell,
 						 GCancellable	*cancellable);
+void		 gs_shell_change_mode		(GsShell	*shell,
+						 GsShellMode	 mode,
+						 gpointer	 data,
+						 gboolean	 scroll_up);
 void		 gs_shell_set_mode		(GsShell	*shell,
 						 GsShellMode	 mode);
+void		 gs_shell_modal_dialog_present	(GsShell	*shell,
+						 GtkDialog	*dialog);
 GsShellMode	 gs_shell_get_mode		(GsShell	*shell);
 const gchar	*gs_shell_get_mode_string	(GsShell	*shell);
 void		 gs_shell_show_installed_updates(GsShell	*shell);
@@ -81,17 +78,19 @@ void		 gs_shell_show_category		(GsShell	*shell,
 						 GsCategory	*category);
 void		 gs_shell_show_search		(GsShell	*shell,
 						 const gchar	*search);
-void		 gs_shell_show_filename		(GsShell	*shell,
-						 const gchar	*filename);
+void		 gs_shell_show_local_file	(GsShell	*shell,
+						 GFile		*file);
 void		 gs_shell_show_search_result	(GsShell	*shell,
 						 const gchar	*id,
 						 const gchar    *search);
-void		 gs_shell_show_details		(GsShell	*shell,
-						 const gchar	*id);
+void		 gs_shell_show_extras_search	(GsShell	*shell,
+						 const gchar	*mode,
+						 gchar		**resources);
+void		 gs_shell_show_uri		(GsShell	*shell,
+						 const gchar	*url);
 void		 gs_shell_setup			(GsShell	*shell,
 						 GsPluginLoader	*plugin_loader,
 						 GCancellable	*cancellable);
-void		 gs_shell_invalidate		(GsShell	*shell);
 gboolean	 gs_shell_is_active		(GsShell	*shell);
 GtkWindow	*gs_shell_get_window		(GsShell	*shell);
 

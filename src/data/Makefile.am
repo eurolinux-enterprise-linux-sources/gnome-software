@@ -1,24 +1,28 @@
 SUBDIRS =						\
 	appdata						\
-	modulesets					\
+	tests						\
 	icons
 
 resourcesdir = $(datadir)/gnome-software
 dist_resources_DATA =					\
+	upgrade-bg.png					\
 	featured-ardour.png				\
 	featured-ardour-bg.png				\
 	featured-blender.png				\
+	featured-builder.png				\
+	featured-builder-bg.jpg				\
 	featured-chess.png				\
 	featured-firefox.png				\
 	featured-gimp.png				\
 	featured-gnome-sudoku.png			\
-	featured-inkscape.png				\
+	featured-inkscape.svg				\
+	featured-maps.png           \
+	featured-maps-bg.png        \
 	featured-mypaint.png				\
+	featured-polari.svg				\
 	featured-transmission.png			\
 	featured-weather.png				\
-	featured-weather-bg.png				\
-	featured-xchat.png				\
-	featured.ini
+	featured-weather-bg.png
 
 @GSETTINGS_RULES@
 gsettings_SCHEMAS = org.gnome.software.gschema.xml
@@ -36,8 +40,7 @@ install-sample-data:
 	cd -
 
 EXTRA_DIST =						\
-	$(gsettings_SCHEMAS)				\
-	featured.ini.in
+	$(gsettings_SCHEMAS)
 
 MAINTAINERCLEANFILES =					\
 	*~						\

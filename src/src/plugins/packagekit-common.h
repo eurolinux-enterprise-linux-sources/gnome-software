@@ -23,9 +23,8 @@
 #define __APPSTREAM_CACHE_H
 
 #include <glib.h>
-#include <gs-plugin.h>
+#include <gnome-software.h>
 
-#define I_KNOW_THE_PACKAGEKIT_GLIB2_API_IS_SUBJECT_TO_CHANGE
 #include <packagekit-glib2/packagekit.h>
 
 G_BEGIN_DECLS
@@ -33,8 +32,11 @@ G_BEGIN_DECLS
 GsPluginStatus 	packagekit_status_enum_to_plugin_status	(PkStatusEnum	 status);
 
 gboolean	gs_plugin_packagekit_add_results	(GsPlugin	*plugin,
-							 GList		**list,
+							 GsAppList	*list,
 							 PkResults	*results,
+							 GError		**error);
+gboolean	gs_plugin_packagekit_convert_gerror	(GError		**error);
+gboolean	gs_plugin_packagekit_results_valid	(PkResults	*results,
 							 GError		**error);
 
 G_END_DECLS

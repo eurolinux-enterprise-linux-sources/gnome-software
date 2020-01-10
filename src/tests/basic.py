@@ -21,23 +21,29 @@ from dogtail.procedural import *
 try:
     run('gnome-software')
 
-    app_name = 'org.gnome.Software'
+    app_name = 'gnome-software'
     app = root.application(app_name)
 
     all_button = app.child('All')
     installed_button = app.child('Installed')
     updates_button = app.child('Updates')
     back_button = app.child('Go back')
-    install_button = app.child(roleName='frame', name='Software', recursive=False).child(roleName='panel', name='', recursive=False).child(roleName='push button', name='Install')
-    remove_button = app.child(roleName='frame', name='Software', recursive=False).child(roleName='panel', name='', recursive=False).child(roleName='push button', name='Remove')
 
     overview_page = app.child('Overview page')
     installed_page = app.child('Installed page')
     updates_page = app.child('Updates page')
     search_page = app.child('Search page')
     details_page = app.child('Details page')
+    install_button = details_page.child('Install')
+    remove_button = details_page.child('Remove')
 
     search_page_listbox = search_page.child(roleName='list box')
+
+    try:
+        shopping_button = app.child(name=u'Let\u2019s Go Shopping', retry=False)
+        shopping_button.click()
+    except tree.SearchError:
+        print "not first-run, moving on"
 
     all_button.click()
     assert (all_button.checked)
@@ -84,7 +90,7 @@ try:
     assert (not updates_page.showing)
     assert (not search_page.showing)
 
-    type("geary\n")
+    type("archive\n")
     doDelay(2)
     assert (not all_button.checked)
     assert (not installed_button.checked)
@@ -95,7 +101,7 @@ try:
     assert (search_page.showing)
 
     """Details page test section"""
-    search_page_listbox.child(roleName='label', name='Geary').click()
+    search_page_listbox.child(roleName='label', name='Archive Manager').click()
     doDelay(4)
     assert (not overview_page.showing)
     assert (not installed_page.showing)

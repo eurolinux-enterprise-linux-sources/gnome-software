@@ -17,22 +17,12 @@
       </object>
     </child>
   </object>
-  <object class="GtkImage" id="button_select_image">
-    <property name="visible">True</property>
-    <property name="icon_size">0</property>
-    <property name="icon_name">object-select-symbolic</property> 
-  </object>
-  <object class="GtkImage" id="button_refresh_image">
-    <property name="visible">True</property>
-    <property name="icon_size">0</property>
-    <property name="icon_name">view-refresh-symbolic</property> 
-  </object>
   <object class="GtkApplicationWindow" id="window_software">
     <property name="can_focus">False</property>
     <property name="default-width">1200</property>
     <property name="default-height">800</property>
     <property name="title" translatable="yes">Software</property>
-    <property name="icon_name">gnome-software</property>
+    <property name="icon_name">org.gnome.Software</property>
     <child>
       <object class="GtkBox" id="box1">
         <property name="visible">True</property>
@@ -207,8 +197,8 @@
                 <child>
                   <object class="GtkLabel" id="application_details_header">
                     <property name="can_focus">False</property>
-                    <property name="label">GNU Image Manipulation Program</property>
                     <property name="selectable">False</property>
+                    <property name="ellipsize">end</property>
                     <style>
                       <class name="title"/>
                     </style>
@@ -252,53 +242,29 @@
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="button_update_all">
-                <property name="use_underline">True</property>
-                <property name="label" translatable="yes">Restart &amp; _Install</property>
+              <object class="GtkToggleButton" id="search_button">
+                <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
+                <property name="receives_default">False</property>
+                <child internal-child="accessible">
+                  <object class="AtkObject" id="search_button_accessible">
+                    <property name="accessible-name" translatable="yes">Search</property>
+                  </object>
+                </child>
                 <style>
-                  <class name="suggested-action"/>
+                  <class name="image-button"/>
                 </style>
-              </object>
-              <packing>
-                <property name="pack_type">end</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="button_select">
-                <property name="image">button_select_image</property>
-                <property name="can_focus">True</property>
-                <child internal-child="accessible">
-                  <object class="AtkObject" id="button-select-accessible">
-                    <property name="accessible-name" translatable="yes">Select</property>
+                <child>
+                  <object class="GtkImage" id="search_image">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="icon_name">edit-find-symbolic</property>
+                    <property name="icon_size">1</property>
                   </object>
                 </child>
               </object>
               <packing>
-                <property name="pack_type">end</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="button_refresh">
-                <property name="image">button_refresh_image</property>
-                <property name="can_focus">True</property>
-                <child internal-child="accessible">
-                  <object class="AtkObject" id="button-refresh-accessible">
-                    <property name="accessible-name" translatable="yes">Check for updates</property>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="pack_type">start</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkSpinner" id="header_spinner_start">
-                <property name="can_focus">False</property>
-              </object>
-              <packing>
-                <property name="pack_type">start</property>
+                <property name="pack-type">end</property>
               </packing>
             </child>
           </object>
@@ -308,75 +274,23 @@
             <property name="position">0</property>
           </packing>
         </child>
+
         <child>
-          <object class="GtkToolbar" id="search_bar">
-            <property name="visible">False</property>
-            <property name="can_focus">False</property>
-            <style>
-              <class name="search-bar"/>
-            </style>
+          <object class="GtkSearchBar" id="search_bar">
+            <property name="visible">True</property>
             <child>
-              <object class="GtkToolItem" id="search_toolitem">
+              <object class="GtkSearchEntry" id="entry_search">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <child>
-                  <object class="GtkBox" id="search_toolbox">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <child>
-                      <object class="GtkBox" id="box_left">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="hexpand">True</property>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSearchEntry" id="entry_search">
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="activates_default">True</property>
-                        <property name="width_request">500</property>
-                        <property name="hexpand">True</property>
-                        <property name="halign">center</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkBox" id="box_right">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="hexpand">True</property>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <placeholder/>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                  </object>
-                </child>
+                <property name="can_focus">True</property>
+                <property name="activates_default">True</property>
+                <property name="width_request">500</property>
+                <property name="hexpand">True</property>
+                <property name="halign">center</property>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
               </packing>
             </child>
           </object>
@@ -386,6 +300,7 @@
             <property name="position">1</property>
           </packing>
         </child>
+
         <child>
           <object class="GtkStack" id="stack_main">
             <property name="visible">True</property>
@@ -403,6 +318,22 @@
               </object>
               <packing>
                 <property name="name">installed</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GsShellModerate" id="shell_moderate">
+                <property name="visible">True</property>
+              </object>
+              <packing>
+                <property name="name">moderate</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GsShellLoading" id="shell_loading">
+                <property name="visible">True</property>
+              </object>
+              <packing>
+                <property name="name">loading</property>
               </packing>
             </child>
             <child>
@@ -439,6 +370,14 @@
               </object>
               <packing>
                 <property name="name">category</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GsShellExtras" id="shell_extras">
+                <property name="visible">True</property>
+              </object>
+              <packing>
+                <property name="name">extras</property>
               </packing>
             </child>
           </object>

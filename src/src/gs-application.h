@@ -24,15 +24,14 @@
 
 #include <gtk/gtk.h>
 
+#include "gs-plugin-loader.h"
+
 #define GS_APPLICATION_TYPE (gs_application_get_type ())
-#define GS_APPLICATION(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GS_APPLICATION_TYPE, GsApplication))
 
-typedef struct _GsApplication		GsApplication;
-typedef struct _GsApplicationClass	GsApplicationClass;
+G_DECLARE_FINAL_TYPE (GsApplication, gs_application, GS, APPLICATION, GtkApplication)
 
-GType		 gs_application_get_type	(void);
 GsApplication	*gs_application_new		(void);
-
+GsPluginLoader	*gs_application_get_plugin_loader	(GsApplication *application);
 gboolean	 gs_application_has_active_window	(GsApplication *application);
 
 #endif  /* __GS_APPLICATION_H */

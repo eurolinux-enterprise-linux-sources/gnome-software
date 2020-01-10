@@ -4,6 +4,9 @@ SUBDIRS =						\
 	src						\
 	tests
 
+# we need objects in src
+SUBDIRS += doc
+
 snapshot:
 	$(MAKE) dist distdir=$(PACKAGE)-$(VERSION)-`date +"%Y%m%d"`
 
@@ -22,12 +25,13 @@ MAINTAINERCLEANFILES =					\
 	config.sub					\
 	configure					\
 	depcomp						\
-	INSTALL						\
+	gtk-doc.make					\
 	install-sh					\
 	ltmain.sh					\
 	Makefile.in					\
 	missing						\
 	mkinstalldirs					\
+	NEWS						\
 	test-driver
 
 EXTRA_DIST =						\
@@ -35,17 +39,19 @@ EXTRA_DIST =						\
 	autogen.sh					\
 	config.h					\
 	COPYING						\
-	INSTALL						\
 	MAINTAINERS					\
 	NEWS						\
 	README
 
 DISTCHECK_CONFIGURE_FLAGS = 				\
+	--enable-gtk-doc				\
+	--disable-tests					\
 	--disable-dogtail
 
 distclean-local:
 	if test $(srdcir) = .; then :; else \
 		rm -f ChangeLog; \
+		rm -f NEWS; \
 	fi
 
 ChangeLog:
@@ -62,6 +68,14 @@ ChangeLog:
 	  echo A git checkout and git-log is required to generate this file >> $@); \
 	fi
 
-.PHONY: ChangeLog
+NEWS: data/appdata/*.appdata.xml
+	$(AM_V_GEN) \
+	if test -e $(APPSTREAM_UTIL); then \
+		$(APPSTREAM_UTIL) appdata-to-news $^ > $@; \
+	else \
+		touch $@; \
+	fi
+
+.PHONY: ChangeLog NEWS
 
 -include $(top_srcdir)/git.mk

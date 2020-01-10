@@ -20,49 +20,35 @@
  */
 
 #include <config.h>
-#include <gio/gio.h>
 
-#define I_KNOW_THE_PACKAGEKIT_GLIB2_API_IS_SUBJECT_TO_CHANGE
 #include <packagekit-glib2/packagekit.h>
 
-#include <gs-plugin.h>
+#include <gnome-software.h>
 
-struct GsPluginPrivate {
+/*
+ * SECTION:
+ * Add previously downloads apps to the update list and also allow
+ * scheduling the offline update.
+ */
+
+struct GsPluginData {
 	GFileMonitor		*monitor;
-	gsize			 done_init;
 };
 
-/**
- * gs_plugin_get_name:
- */
-const gchar *
-gs_plugin_get_name (void)
-{
-	return "systemd-updates";
-}
-
-/**
- * gs_plugin_initialize:
- */
 void
 gs_plugin_initialize (GsPlugin *plugin)
 {
-	plugin->priv = GS_PLUGIN_GET_PRIVATE (GsPluginPrivate);
+	gs_plugin_alloc_data (plugin, sizeof(GsPluginData));
 }
 
-/**
- * gs_plugin_destroy:
- */
 void
 gs_plugin_destroy (GsPlugin *plugin)
 {
-	if (plugin->priv->monitor != NULL)
-		g_object_unref (plugin->priv->monitor);
+	GsPluginData *priv = gs_plugin_get_data (plugin);
+	if (priv->monitor != NULL)
+		g_object_unref (priv->monitor);
 }
 
-/**
- * gs_plugin_systemd_updates_changed_cb:
- */
 static void
 gs_plugin_systemd_updates_changed_cb (GFileMonitor *monitor,
 				      GFile *file, GFile *other_file,
@@ -70,47 +56,34 @@ gs_plugin_systemd_updates_changed_cb (GFileMonitor *monitor,
 				      gpointer user_data)
 {
 	GsPlugin *plugin = GS_PLUGIN (user_data);
+
+	/* update UI */
 	gs_plugin_updates_changed (plugin);
 }
 
-/**
- * gs_plugin_startup:
- */
-static gboolean
-gs_plugin_startup (GsPlugin *plugin, GCancellable *cancellable, GError **error)
+gboolean
+gs_plugin_setup (GsPlugin *plugin, GCancellable *cancellable, GError **error)
 {
-	plugin->priv->monitor = pk_offline_get_prepared_monitor (cancellable, error);
-	if (plugin->priv->monitor == NULL)
+	GsPluginData *priv = gs_plugin_get_data (plugin);
+	priv->monitor = pk_offline_get_prepared_monitor (cancellable, error);
+	if (priv->monitor == NULL) {
 		return FALSE;
-	g_signal_connect (plugin->priv->monitor, "changed",
+	}
+	g_signal_connect (priv->monitor, "changed",
 			  G_CALLBACK (gs_plugin_systemd_updates_changed_cb),
 			  plugin);
 	return TRUE;
 }
 
-/**
- * gs_plugin_add_updates:
- */
 gboolean
 gs_plugin_add_updates (GsPlugin *plugin,
-		       GList **list,
+		       GsAppList *list,
 		       GCancellable *cancellable,
 		       GError **error)
 {
-	GError *error_local = NULL;
-	GsApp *app;
-	gboolean ret = TRUE;
-	gchar **package_ids = NULL;
-	gchar **split;
 	guint i;
-
-	/* watch the file in case it comes or goes */
-	if (g_once_init_enter (&plugin->priv->done_init)) {
-		ret = gs_plugin_startup (plugin, cancellable, error);
-		g_once_init_leave (&plugin->priv->done_init, TRUE);
-		if (!ret)
-			goto out;
-	}
+	g_autoptr(GError) error_local = NULL;
+	g_auto(GStrv) package_ids = NULL;
 
 	/* get the id's if the file exists */
 	package_ids = pk_offline_get_prepared_ids (&error_local);
@@ -118,30 +91,115 @@ gs_plugin_add_updates (GsPlugin *plugin,
 		if (g_error_matches (error_local,
 				     PK_OFFLINE_ERROR,
 				     PK_OFFLINE_ERROR_NO_DATA)) {
-			g_error_free (error_local);
-			ret = TRUE;
-		} else {
-			g_propagate_error (error, error_local);
-			ret = FALSE;
+			return TRUE;
 		}
-		goto out;
+		g_set_error (error,
+			     GS_PLUGIN_ERROR,
+			     GS_PLUGIN_ERROR_INVALID_FORMAT,
+			     "Failed to get prepared IDs: %s",
+			     error_local->message);
+		return FALSE;
 	}
 
 	/* add them to the new array */
 	for (i = 0; package_ids[i] != NULL; i++) {
+		g_autoptr(GsApp) app = NULL;
+		g_auto(GStrv) split = NULL;
+
+		/* search in the cache */
+		app = gs_plugin_cache_lookup (plugin, package_ids[i]);
+		if (app != NULL) {
+			gs_app_list_add (list, app);
+			continue;
+		}
+
+		/* create new app */
 		app = gs_app_new (NULL);
-		gs_app_set_management_plugin (app, "PackageKit");
+		gs_app_add_quirk (app, AS_APP_QUIRK_NEEDS_REBOOT);
+		gs_app_set_management_plugin (app, "packagekit");
 		gs_app_add_source_id (app, package_ids[i]);
 		split = pk_package_id_split (package_ids[i]);
 		gs_app_add_source (app, split[PK_PACKAGE_ID_NAME]);
 		gs_app_set_update_version (app, split[PK_PACKAGE_ID_VERSION]);
 		gs_app_set_state (app, AS_APP_STATE_UPDATABLE);
-		gs_app_set_kind (app, GS_APP_KIND_PACKAGE);
-		gs_plugin_add_app (list, app);
-		g_object_unref (app);
-		g_strfreev (split);
+		gs_app_set_kind (app, AS_APP_KIND_GENERIC);
+		gs_app_set_size_download (app, 0);
+		gs_app_list_add (list, app);
+
+		/* save in the cache */
+		gs_plugin_cache_add (plugin, package_ids[i], app);
 	}
-out:
-	g_strfreev (package_ids);
-	return ret;
+	return TRUE;
+}
+
+static gboolean
+gs_plugin_systemd_updates_requires_trigger (GsApp *app)
+{
+	GPtrArray *related;
+	guint i;
+
+	/* look at related apps too */
+	related = gs_app_get_related (app);
+	for (i = 0; i < related->len; i++) {
+		GsApp *app_tmp = g_ptr_array_index (related, i);
+		if (gs_plugin_systemd_updates_requires_trigger (app_tmp))
+			return TRUE;
+	}
+
+	/* if we can process this online do not require a trigger */
+	if (gs_app_get_state (app) != AS_APP_STATE_UPDATABLE)
+		return FALSE;
+
+	/* only process this app if was created by this plugin */
+	if (g_strcmp0 (gs_app_get_management_plugin (app), "packagekit") != 0)
+		return FALSE;
+
+	/* success! */
+	return TRUE;
+}
+
+gboolean
+gs_plugin_update (GsPlugin *plugin,
+		  GsAppList *apps,
+		  GCancellable *cancellable,
+		  GError **error)
+{
+	guint i;
+
+	/* any apps to process offline */
+	for (i = 0; i < gs_app_list_length (apps); i++) {
+		GsApp *app = gs_app_list_index (apps, i);
+		if (gs_plugin_systemd_updates_requires_trigger (app)) {
+			if (!pk_offline_trigger (PK_OFFLINE_ACTION_REBOOT,
+						 cancellable, error)) {
+				return FALSE;
+			}
+			return TRUE;
+		}
+	}
+	return TRUE;
+}
+
+gboolean
+gs_plugin_update_cancel (GsPlugin *plugin,
+			 GsApp *app,
+			 GCancellable *cancellable,
+			 GError **error)
+{
+	/* only process this app if was created by this plugin */
+	if (g_strcmp0 (gs_app_get_management_plugin (app), "packagekit") != 0)
+		return TRUE;
+	return pk_offline_cancel (NULL, error);
+}
+
+gboolean
+gs_plugin_app_upgrade_trigger (GsPlugin *plugin,
+                               GsApp *app,
+                               GCancellable *cancellable,
+                               GError **error)
+{
+	/* only process this app if was created by this plugin */
+	if (g_strcmp0 (gs_app_get_management_plugin (app), "packagekit") != 0)
+		return TRUE;
+	return pk_offline_trigger_upgrade (PK_OFFLINE_ACTION_REBOOT, cancellable, error);
 }

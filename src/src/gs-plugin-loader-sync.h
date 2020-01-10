@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2007-2014 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2007-2015 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -28,38 +28,40 @@
 
 G_BEGIN_DECLS
 
-GList		*gs_plugin_loader_get_installed		(GsPluginLoader	*plugin_loader,
+GsAppList	*gs_plugin_loader_get_installed		(GsPluginLoader	*plugin_loader,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
 							 GError		**error);
-GList		*gs_plugin_loader_search		(GsPluginLoader	*plugin_loader,
+GsAppList	*gs_plugin_loader_search		(GsPluginLoader	*plugin_loader,
 							 const gchar	*value,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
 							 GError		**error);
-GList		*gs_plugin_loader_get_updates		(GsPluginLoader	*plugin_loader,
+GsAppList	*gs_plugin_loader_get_updates		(GsPluginLoader	*plugin_loader,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
 							 GError		**error);
-GList		*gs_plugin_loader_get_sources		(GsPluginLoader	*plugin_loader,
+GsAppList	*gs_plugin_loader_get_distro_upgrades	(GsPluginLoader	*plugin_loader,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
 							 GError		**error);
-GList		*gs_plugin_loader_get_popular		(GsPluginLoader	*plugin_loader,
-							 GsPluginRefineFlags flags,
-							 const gchar	*category,
-							 const gchar	*category_exclude,
-							 GCancellable	*cancellable,
-							 GError		**error);
-GList		*gs_plugin_loader_get_featured		(GsPluginLoader	*plugin_loader,
+GsAppList	*gs_plugin_loader_get_sources		(GsPluginLoader	*plugin_loader,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
 							 GError		**error);
-GList		*gs_plugin_loader_get_categories	(GsPluginLoader	*plugin_loader,
+GsAppList	*gs_plugin_loader_get_popular		(GsPluginLoader	*plugin_loader,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
 							 GError		**error);
-GList		*gs_plugin_loader_get_category_apps	(GsPluginLoader	*plugin_loader,
+GsAppList	*gs_plugin_loader_get_featured		(GsPluginLoader	*plugin_loader,
+							 GsPluginRefineFlags flags,
+							 GCancellable	*cancellable,
+							 GError		**error);
+GPtrArray	*gs_plugin_loader_get_categories	(GsPluginLoader	*plugin_loader,
+							 GsPluginRefineFlags flags,
+							 GCancellable	*cancellable,
+							 GError		**error);
+GsAppList	*gs_plugin_loader_get_category_apps	(GsPluginLoader	*plugin_loader,
 							 GsCategory	*category,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
@@ -71,7 +73,18 @@ gboolean	 gs_plugin_loader_app_refine		(GsPluginLoader	*plugin_loader,
 							 GError		**error);
 gboolean	 gs_plugin_loader_app_action		(GsPluginLoader	*plugin_loader,
 							 GsApp		*app,
-							 GsPluginLoaderAction action,
+							 GsPluginAction	 action,
+							 GCancellable	*cancellable,
+							 GError		**error);
+gboolean	 gs_plugin_loader_review_action		(GsPluginLoader	*plugin_loader,
+							 GsApp		*app,
+							 AsReview	*review,
+							 GsPluginAction	 action,
+							 GCancellable	*cancellable,
+							 GError		**error);
+gboolean	 gs_plugin_loader_auth_action		(GsPluginLoader	*plugin_loader,
+							 GsAuth		*auth,
+							 GsPluginAction	 action,
 							 GCancellable	*cancellable,
 							 GError		**error);
 gboolean	 gs_plugin_loader_refresh		(GsPluginLoader	*plugin_loader,
@@ -84,8 +97,8 @@ GsApp		*gs_plugin_loader_get_app_by_id		(GsPluginLoader	*plugin_loader,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
 							 GError		**error);
-GsApp		*gs_plugin_loader_filename_to_app	(GsPluginLoader	*plugin_loader,
-							 const gchar	*filename,
+GsApp		*gs_plugin_loader_file_to_app		(GsPluginLoader	*plugin_loader,
+							 GFile		*file,
 							 GsPluginRefineFlags flags,
 							 GCancellable	*cancellable,
 							 GError		**error);

@@ -20,7 +20,7 @@ from dogtail.rawinput import keyCombo
 try:
     run('gnome-software')
 
-    app = root.application('org.gnome.Software')
+    app = root.application('gnome-software')
 
     bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
     proxy = Gio.DBusProxy.new_sync(bus, Gio.DBusProxyFlags.NONE,
@@ -29,6 +29,13 @@ try:
                                    '/org/gnome/Software',
                                    'org.gtk.Application')
     proxy.call_sync('Activate', GLib.Variant('(a{sv})', ({},)), 0, -1, None)
+
+    doDelay(1)
+    try:
+        shopping_button = app.child(name=u'Let\u2019s Go Shopping', retry=False)
+        shopping_button.click()
+    except tree.SearchError:
+        print "not first-run, moving on"
 
     doDelay(1)
     assert (len(app.children) == 1)

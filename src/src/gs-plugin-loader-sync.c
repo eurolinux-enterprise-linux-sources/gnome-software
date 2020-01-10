@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2012-2014 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2012-2015 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -23,9 +23,6 @@
 
 #include "gs-plugin-loader-sync.h"
 
-/**
- * gs_plugin_loader_get_app_by_id:
- */
 GsApp *
 gs_plugin_loader_get_app_by_id (GsPluginLoader *plugin_loader,
 				const gchar *id,
@@ -37,7 +34,6 @@ gs_plugin_loader_get_app_by_id (GsPluginLoader *plugin_loader,
 	gboolean ret;
 
 	app = gs_app_new (id);
-	app = gs_plugin_loader_dedupe (plugin_loader, app);
 	ret = gs_plugin_loader_app_refine (plugin_loader, app, flags,
 					   cancellable, error);
 	if (!ret)
@@ -48,7 +44,8 @@ gs_plugin_loader_get_app_by_id (GsPluginLoader *plugin_loader,
 /* tiny helper to help us do the async operation */
 typedef struct {
 	GError		**error;
-	GList		*list;
+	GsAppList	*list;
+	GPtrArray	*catlist;
 	GMainContext    *context;
 	GMainLoop	*loop;
 	gboolean	 ret;
@@ -66,10 +63,7 @@ gs_plugin_loader_get_installed_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_get_installed:
- **/
-GList *
+GsAppList *
 gs_plugin_loader_get_installed (GsPluginLoader *plugin_loader,
 				GsPluginRefineFlags flags,
 				GCancellable *cancellable,
@@ -111,10 +105,7 @@ gs_plugin_loader_search_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_search:
- **/
-GList *
+GsAppList *
 gs_plugin_loader_search (GsPluginLoader *plugin_loader,
 			 const gchar *value,
 			 GsPluginRefineFlags flags,
@@ -158,10 +149,7 @@ gs_plugin_loader_get_updates_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_get_updates:
- **/
-GList *
+GsAppList *
 gs_plugin_loader_get_updates (GsPluginLoader *plugin_loader,
 			      GsPluginRefineFlags flags,
 			      GCancellable *cancellable,
@@ -193,6 +181,48 @@ gs_plugin_loader_get_updates (GsPluginLoader *plugin_loader,
 }
 
 static void
+gs_plugin_loader_get_distro_upgrades_finish_sync (GsPluginLoader *plugin_loader,
+					  GAsyncResult *res,
+					  GsPluginLoaderHelper *helper)
+{
+	helper->list = gs_plugin_loader_get_distro_upgrades_finish (plugin_loader,
+								    res,
+								    helper->error);
+	g_main_loop_quit (helper->loop);
+}
+
+GsAppList *
+gs_plugin_loader_get_distro_upgrades (GsPluginLoader *plugin_loader,
+			      GsPluginRefineFlags flags,
+			      GCancellable *cancellable,
+			      GError **error)
+{
+	GsPluginLoaderHelper helper;
+
+	/* create temp object */
+	helper.context = g_main_context_new ();
+	helper.loop = g_main_loop_new (helper.context, FALSE);
+	helper.error = error;
+
+	g_main_context_push_thread_default (helper.context);
+
+	/* run async method */
+	gs_plugin_loader_get_distro_upgrades_async (plugin_loader,
+						    flags,
+						    cancellable,
+						    (GAsyncReadyCallback) gs_plugin_loader_get_distro_upgrades_finish_sync,
+						    &helper);
+	g_main_loop_run (helper.loop);
+
+	g_main_context_pop_thread_default (helper.context);
+
+	g_main_loop_unref (helper.loop);
+	g_main_context_unref (helper.context);
+
+	return helper.list;
+}
+
+static void
 gs_plugin_loader_get_sources_finish_sync (GsPluginLoader *plugin_loader,
 					  GAsyncResult *res,
 					  GsPluginLoaderHelper *helper)
@@ -203,10 +233,7 @@ gs_plugin_loader_get_sources_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_get_sources:
- **/
-GList *
+GsAppList *
 gs_plugin_loader_get_sources (GsPluginLoader *plugin_loader,
 			      GsPluginRefineFlags flags,
 			      GCancellable *cancellable,
@@ -248,14 +275,9 @@ gs_plugin_loader_get_popular_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_get_popular:
- **/
-GList *
+GsAppList *
 gs_plugin_loader_get_popular (GsPluginLoader *plugin_loader,
 			      GsPluginRefineFlags flags,
-			      const gchar *category,
-			      const gchar *category_exclude,
 			      GCancellable *cancellable,
 			      GError **error)
 {
@@ -271,8 +293,6 @@ gs_plugin_loader_get_popular (GsPluginLoader *plugin_loader,
 	/* run async method */
 	gs_plugin_loader_get_popular_async (plugin_loader,
 					    flags,
-					    category,
-					    category_exclude,
 					    cancellable,
 					    (GAsyncReadyCallback) gs_plugin_loader_get_popular_finish_sync,
 					    &helper);
@@ -297,10 +317,7 @@ gs_plugin_loader_get_featured_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_get_featured:
- **/
-GList *
+GsAppList *
 gs_plugin_loader_get_featured (GsPluginLoader *plugin_loader,
 			       GsPluginRefineFlags flags,
 			       GCancellable *cancellable,
@@ -336,16 +353,13 @@ gs_plugin_loader_get_categories_finish_sync (GsPluginLoader *plugin_loader,
 					     GAsyncResult *res,
 					     GsPluginLoaderHelper *helper)
 {
-	helper->list = gs_plugin_loader_get_categories_finish (plugin_loader,
+	helper->catlist = gs_plugin_loader_get_categories_finish (plugin_loader,
 							       res,
 							       helper->error);
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_get_categories:
- **/
-GList *
+GPtrArray *
 gs_plugin_loader_get_categories (GsPluginLoader *plugin_loader,
 				 GsPluginRefineFlags flags,
 				 GCancellable *cancellable,
@@ -373,7 +387,7 @@ gs_plugin_loader_get_categories (GsPluginLoader *plugin_loader,
 	g_main_loop_unref (helper.loop);
 	g_main_context_unref (helper.context);
 
-	return helper.list;
+	return helper.catlist;
 }
 
 static void
@@ -387,10 +401,7 @@ gs_plugin_loader_get_category_apps_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_get_category_apps:
- **/
-GList *
+GsAppList *
 gs_plugin_loader_get_category_apps (GsPluginLoader *plugin_loader,
 				    GsCategory *category,
 				    GsPluginRefineFlags flags,
@@ -423,9 +434,6 @@ gs_plugin_loader_get_category_apps (GsPluginLoader *plugin_loader,
 	return helper.list;
 }
 
-/**
- * gs_plugin_loader_app_refine_finish_sync:
- **/
 static void
 gs_plugin_loader_app_refine_finish_sync (GsPluginLoader *plugin_loader,
 					 GAsyncResult *res,
@@ -437,9 +445,6 @@ gs_plugin_loader_app_refine_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_app_refine:
- **/
 gboolean
 gs_plugin_loader_app_refine (GsPluginLoader *plugin_loader,
 			     GsApp *app,
@@ -473,9 +478,6 @@ gs_plugin_loader_app_refine (GsPluginLoader *plugin_loader,
 	return helper.ret;
 }
 
-/**
- * gs_plugin_loader_app_action_finish_sync:
- **/
 static void
 gs_plugin_loader_app_action_finish_sync (GsPluginLoader *plugin_loader,
 					 GAsyncResult *res,
@@ -487,13 +489,10 @@ gs_plugin_loader_app_action_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_app_action:
- **/
 gboolean
 gs_plugin_loader_app_action (GsPluginLoader *plugin_loader,
 			     GsApp *app,
-			     GsPluginLoaderAction action,
+			     GsPluginAction action,
 			     GCancellable *cancellable,
 			     GError **error)
 {
@@ -523,9 +522,96 @@ gs_plugin_loader_app_action (GsPluginLoader *plugin_loader,
 	return helper.ret;
 }
 
-/**
- * gs_plugin_loader_refresh_finish_sync:
- **/
+static void
+gs_plugin_loader_review_action_finish_sync (GsPluginLoader *plugin_loader,
+					    GAsyncResult *res,
+					    GsPluginLoaderHelper *helper)
+{
+	helper->ret = gs_plugin_loader_review_action_finish (plugin_loader,
+							     res,
+							     helper->error);
+	g_main_loop_quit (helper->loop);
+}
+
+gboolean
+gs_plugin_loader_review_action (GsPluginLoader *plugin_loader,
+				GsApp *app,
+				AsReview *review,
+				GsPluginAction action,
+				GCancellable *cancellable,
+				GError **error)
+{
+	GsPluginLoaderHelper helper;
+
+	/* create temp object */
+	helper.context = g_main_context_new ();
+	helper.loop = g_main_loop_new (helper.context, FALSE);
+	helper.error = error;
+
+	g_main_context_push_thread_default (helper.context);
+
+	/* run async method */
+	gs_plugin_loader_review_action_async (plugin_loader,
+					      app,
+					      review,
+					      action,
+					      cancellable,
+					      (GAsyncReadyCallback) gs_plugin_loader_review_action_finish_sync,
+					      &helper);
+	g_main_loop_run (helper.loop);
+
+	g_main_context_pop_thread_default (helper.context);
+
+	g_main_loop_unref (helper.loop);
+	g_main_context_unref (helper.context);
+
+	return helper.ret;
+}
+
+static void
+gs_plugin_loader_auth_action_finish_sync (GsPluginLoader *plugin_loader,
+					  GAsyncResult *res,
+					  GsPluginLoaderHelper *helper)
+{
+	helper->ret = gs_plugin_loader_auth_action_finish (plugin_loader,
+							   res,
+							   helper->error);
+	g_main_loop_quit (helper->loop);
+}
+
+gboolean
+gs_plugin_loader_auth_action (GsPluginLoader *plugin_loader,
+			      GsAuth *auth,
+			      GsPluginAction action,
+			      GCancellable *cancellable,
+			      GError **error)
+{
+	GsPluginLoaderHelper helper;
+
+	/* create temp object */
+	helper.context = g_main_context_new ();
+	helper.loop = g_main_loop_new (helper.context, FALSE);
+	helper.error = error;
+
+	g_main_context_push_thread_default (helper.context);
+
+	/* run async method */
+	gs_plugin_loader_auth_action_async (plugin_loader,
+					    auth,
+					    action,
+					    cancellable,
+					    (GAsyncReadyCallback) gs_plugin_loader_auth_action_finish_sync,
+					    &helper);
+	g_main_loop_run (helper.loop);
+
+	g_main_context_pop_thread_default (helper.context);
+
+	g_main_loop_unref (helper.loop);
+	g_main_context_unref (helper.context);
+
+	return helper.ret;
+}
+
 static void
 gs_plugin_loader_refresh_finish_sync (GsPluginLoader *plugin_loader,
 				      GAsyncResult *res,
@@ -537,9 +623,6 @@ gs_plugin_loader_refresh_finish_sync (GsPluginLoader *plugin_loader,
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_refresh:
- **/
 gboolean
 gs_plugin_loader_refresh (GsPluginLoader *plugin_loader,
 			  guint cache_age,
@@ -574,27 +657,24 @@ gs_plugin_loader_refresh (GsPluginLoader *plugin_loader,
 }
 
 static void
-gs_plugin_loader_filename_to_app_finish_sync (GObject *source_object,
-					      GAsyncResult *res,
-					      gpointer user_data)
+gs_plugin_loader_file_to_app_finish_sync (GObject *source_object,
+					  GAsyncResult *res,
+					  gpointer user_data)
 {
 	GsPluginLoader *plugin_loader = GS_PLUGIN_LOADER (source_object);
 	GsPluginLoaderHelper *helper = (GsPluginLoaderHelper *) user_data;
-	helper->app = gs_plugin_loader_filename_to_app_finish (plugin_loader,
-							       res,
-							       helper->error);
+	helper->app = gs_plugin_loader_file_to_app_finish (plugin_loader,
+							   res,
+							   helper->error);
 	g_main_loop_quit (helper->loop);
 }
 
-/**
- * gs_plugin_loader_filename_to_app:
- **/
 GsApp *
-gs_plugin_loader_filename_to_app (GsPluginLoader *plugin_loader,
-				  const gchar *filename,
-				  GsPluginRefineFlags flags,
-				  GCancellable *cancellable,
-				  GError **error)
+gs_plugin_loader_file_to_app (GsPluginLoader *plugin_loader,
+			      GFile *file,
+			      GsPluginRefineFlags flags,
+			      GCancellable *cancellable,
+			      GError **error)
 {
 	GsPluginLoaderHelper helper;
 
@@ -607,12 +687,12 @@ gs_plugin_loader_filename_to_app (GsPluginLoader *plugin_loader,
 	g_main_context_push_thread_default (helper.context);
 
 	/* run async method */
-	gs_plugin_loader_filename_to_app_async (plugin_loader,
-						filename,
-						flags,
-						cancellable,
-						gs_plugin_loader_filename_to_app_finish_sync,
-						&helper);
+	gs_plugin_loader_file_to_app_async (plugin_loader,
+					    file,
+					    flags,
+					    cancellable,
+					    gs_plugin_loader_file_to_app_finish_sync,
+					    &helper);
 	g_main_loop_run (helper.loop);
 
 	g_main_context_pop_thread_default (helper.context);

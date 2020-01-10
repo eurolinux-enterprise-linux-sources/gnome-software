@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2013 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2013-2016 Richard Hughes <richard@hughsie.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -22,40 +22,54 @@
 #ifndef __GS_UTILS_H
 #define __GS_UTILS_H
 
+#include <gio/gdesktopappinfo.h>
 #include <gtk/gtk.h>
 
 #include "gs-app.h"
-#include "gs-plugin-loader.h"
 
 G_BEGIN_DECLS
 
-void	 gs_start_spinner		(GtkSpinner	*spinner);
-void	 gs_stop_spinner		(GtkSpinner	*spinner);
-void	 gs_container_remove_all	(GtkContainer	*container);
-void	 gs_grab_focus_when_mapped	(GtkWidget	*widget);
+/**
+ * GsUtilsCacheFlags:
+ * @GS_UTILS_CACHE_FLAG_NONE:		No flags set
+ * @GS_UTILS_CACHE_FLAG_WRITEABLE:	A writable directory is required
+ *
+ * The cache flags.
+ **/
+typedef enum {
+	GS_UTILS_CACHE_FLAG_NONE	= 0,
+	GS_UTILS_CACHE_FLAG_WRITEABLE	= 1 << 0,
+	/*< private >*/
+	GS_UTILS_CACHE_FLAG_LAST
+} GsUtilsCacheFlags;
 
-void	 gs_app_notify_installed	(GsApp		*app);
-void	 gs_app_notify_failed_modal	(GsApp		*app,
-					 GtkWindow	*parent_window,
-					 GsPluginLoaderAction action,
-					 const GError	*error);
-
-guint	 gs_string_replace		(GString	*string,
-					 const gchar	*search,
-					 const gchar	*replace);
-gboolean gs_mkdir_parent		(const gchar	*path,
-					 GError		**error);
-GdkPixbuf *gs_pixbuf_load		(const gchar	*icon_name,
-					 const gchar	*icon_path,
-					 guint		 icon_size,
-					 GError		**error);
-void     gs_reboot                      (GCallback	  reboot_failed);
-
-void	gs_image_set_from_pixbuf_with_scale	(GtkImage		*image,
-						 const GdkPixbuf	*pixbuf,
-						 gint			 scale);
-void	gs_image_set_from_pixbuf		(GtkImage		*image,
-						 const GdkPixbuf	*pixbuf);
+guint		 gs_utils_get_file_age		(GFile		*file);
+gchar		*gs_utils_get_content_type	(GFile		*file,
+						 GCancellable	*cancellable,
+						 GError		**error);
+gboolean	 gs_utils_symlink		(const gchar	*target,
+						 const gchar	*linkpath,
+						 GError		**error);
+gboolean	 gs_utils_unlink		(const gchar	*filename,
+						 GError		**error);
+gboolean	 gs_mkdir_parent		(const gchar	*path,
+						 GError		**error);
+gchar		*gs_utils_get_cache_filename	(const gchar	*kind,
+						 const gchar	*basename,
+						 GsUtilsCacheFlags flags,
+						 GError		**error);
+gchar		*gs_utils_get_user_hash		(GError		**error);
+GPermission	*gs_utils_get_permission	(const gchar	*id);
+gboolean	 gs_utils_strv_fnmatch		(gchar		**strv,
+						 const gchar	*str);
+GDesktopAppInfo *gs_utils_get_desktop_app_info	(const gchar	*id);
+gboolean	 gs_utils_rmtree		(const gchar	*directory,
+						 GError		**error);
+gint		 gs_utils_get_wilson_rating	(guint64	 star1,
+						 guint64	 star2,
+						 guint64	 star3,
+						 guint64	 star4,
+						 guint64	 star5);
 
 G_END_DECLS
 
