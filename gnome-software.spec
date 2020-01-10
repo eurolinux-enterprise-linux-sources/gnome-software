@@ -13,7 +13,7 @@
 
 Name:      gnome-software
 Version:   3.22.7
-Release:   1%{?dist}
+Release:   5%{?dist}
 Summary:   A software center for GNOME
 
 License:   GPLv2+
@@ -25,6 +25,16 @@ Patch2:    0001-Change-the-name-of-the-application-to-Application-In.patch
 
 # Update translations
 Patch3:    downstream-translations.patch
+
+# No error when a GsApp has no valid sources
+Patch4:    0001-packagekit-Never-call-GetDetails-when-there-are-no-s.patch
+Patch5:    0002-trivial-Add-some-error-prefixes-to-better-chase-down.patch
+
+# Blacklist the session manager
+Patch6:    0001-trivial-Add-another-application-to-the-blacklist.patch
+
+# Fix flatpakref installation
+Patch7:    0001-flatpak-Set-the-correct-origin-when-installing-a-fla.patch
 
 BuildRequires: gettext
 BuildRequires: intltool
@@ -85,6 +95,10 @@ the source tree. Most users do not need this subpackage installed.
 %setup -q
 %patch2 -p1 -b .funky-name
 %patch3 -p1 -b .downstream-translations
+%patch4 -p1 -b .ignore-no-source-ids
+%patch5 -p1 -b .better-error-messages
+%patch6 -p1 -b .no-session-manager
+%patch7 -p1 -b .flatpakref-installation
 
 %build
 %configure \
@@ -114,7 +128,6 @@ desktop-file-edit %{buildroot}%{_datadir}/applications/org.gnome.Software.deskto
 cat >> %{buildroot}%{_datadir}/glib-2.0/schemas/org.gnome.software-fedora.gschema.override << FOE
 [org.gnome.software]
 official-sources = [ 'rhel-7' ]
-nonfree-sources = [ 'google-chrome' ]
 FOE
 
 %find_lang %name --with-gnome
@@ -201,6 +214,23 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas &> /dev/null || :
 %{_datadir}/gtk-doc/html/gnome-software
 
 %changelog
+* Wed Feb 07 2018 Kalev Lember <klember@redhat.com> - 3.22.7-5
+- Backport a fix for installing flatpakref files
+- Resolves: #1509883
+
+* Tue Jan 23 2018 Ray Strode <rstrode@redhat.com> - 3.22.7-4
+- Drop non-free sources from schema to avoid confusing infobar at startup
+  Resolves: #1514113
+
+* Fri Nov 03 2017 Richard Hughes <rhughes@redhat.com> - 3.22.7-3
+- Never show 'Startup Applications' in the search results
+- Note: the other issue shown in the bug is likely a dupe of #1445651
+- Resolves: #1481145
+
+* Tue Sep 19 2017 Richard Hughes <rhughes@redhat.com> - 3.22.7-2
+- Backport two fixes to fix a common error message
+- Resolves: #1445651
+
 * Tue Mar 14 2017 Kalev Lember <klember@redhat.com> - 3.22.7-1
 - Update to 3.22.7
 - Resolves: #1386961

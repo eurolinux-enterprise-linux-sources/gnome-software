@@ -1,0 +1,27 @@
+From 810b31a71812a0738c1114edc3ac61b8f55751b9 Mon Sep 17 00:00:00 2001
+From: Richard Hughes <richard@hughsie.com>
+Date: Tue, 19 Sep 2017 11:50:03 +0100
+Subject: [PATCH 1/2] packagekit: Never call GetDetails when there are no
+ source IDs
+
+Fixes: https://bugzilla.redhat.com/show_bug.cgi?id=1445651
+---
+ src/plugins/gs-plugin-packagekit-refine.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/plugins/gs-plugin-packagekit-refine.c b/src/plugins/gs-plugin-packagekit-refine.c
+index 2e4c1dfd..b5c6f990 100644
+--- a/src/plugins/gs-plugin-packagekit-refine.c
++++ b/src/plugins/gs-plugin-packagekit-refine.c
+@@ -520,6 +520,8 @@ gs_plugin_packagekit_refine_details (GsPlugin *plugin,
+ 			g_ptr_array_add (package_ids, g_strdup (package_id));
+ 		}
+ 	}
++	if (package_ids->len == 0)
++		return TRUE;
+ 	g_ptr_array_add (package_ids, NULL);
+ 
+ 	data.app = NULL;
+-- 
+2.13.5
+
