@@ -22,7 +22,6 @@
 #include "config.h"
 
 #include <glib/gi18n.h>
-#include <gtk/gtk.h>
 
 #include "gs-summary-tile.h"
 #include "gs-star-widget.h"
@@ -59,13 +58,15 @@ app_state_changed_idle (gpointer user_data)
 {
 	GsSummaryTile *tile = GS_SUMMARY_TILE (user_data);
 	AtkObject *accessible;
-	GtkWidget *label;
 	gboolean installed;
 	g_autofree gchar *name = NULL;
 
+	/* nothing set yet */
+	if (tile->app == NULL)
+		return G_SOURCE_REMOVE;
+
 	accessible = gtk_widget_get_accessible (GTK_WIDGET (tile));
 
-	label = gtk_bin_get_child (GTK_BIN (tile->eventbox));
 	switch (gs_app_get_state (tile->app)) {
 	case AS_APP_STATE_INSTALLED:
 	case AS_APP_STATE_UPDATABLE:
@@ -73,25 +74,16 @@ app_state_changed_idle (gpointer user_data)
 		installed = TRUE;
 		name = g_strdup_printf (_("%s (Installed)"),
 					gs_app_get_name (tile->app));
-		/* TRANSLATORS: this is the small blue label on the tile
-		 * that tells the user the application is installed */
-		gtk_label_set_label (GTK_LABEL (label), _("Installed"));
 		break;
 	case AS_APP_STATE_INSTALLING:
-		installed = TRUE;
+		installed = FALSE;
 		name = g_strdup_printf (_("%s (Installing)"),
 					gs_app_get_name (tile->app));
-		/* TRANSLATORS: this is the small blue label on the tile
-		 * that tells the user the application is being installed */
-		gtk_label_set_label (GTK_LABEL (label), _("Installing"));
 		break;
 	case AS_APP_STATE_REMOVING:
 		installed = TRUE;
 		name = g_strdup_printf (_("%s (Removing)"),
 					gs_app_get_name (tile->app));
-		/* TRANSLATORS: this is the small blue label on the tile
-		 * that tells the user the application is being removed */
-		gtk_label_set_label (GTK_LABEL (label), _("Removing"));
 		break;
 	case AS_APP_STATE_QUEUED_FOR_INSTALL:
 	case AS_APP_STATE_AVAILABLE:
@@ -103,7 +95,7 @@ app_state_changed_idle (gpointer user_data)
 
 	gtk_widget_set_visible (tile->eventbox, installed);
 
-	if (GTK_IS_ACCESSIBLE (accessible)) {
+	if (GTK_IS_ACCESSIBLE (accessible) && name != NULL) {
 		atk_object_set_name (accessible, name);
 		atk_object_set_description (accessible, gs_app_get_summary (tile->app));
 	}
@@ -123,6 +115,7 @@ gs_summary_tile_set_app (GsAppTile *app_tile, GsApp *app)
 {
 	const GdkPixbuf *pixbuf;
 	GsSummaryTile *tile = GS_SUMMARY_TILE (app_tile);
+	const gchar *css;
 	g_autofree gchar *text = NULL;
 
 	g_return_if_fail (GS_IS_APP (app) || app == NULL);
@@ -141,16 +134,25 @@ gs_summary_tile_set_app (GsAppTile *app_tile, GsApp *app)
 
 	g_signal_connect (tile->app, "notify::state",
 			  G_CALLBACK (app_state_changed), tile);
+	g_signal_connect (tile->app, "notify::name",
+			  G_CALLBACK (app_state_changed), tile);
+	g_signal_connect (tile->app, "notify::summary",
+			  G_CALLBACK (app_state_changed), tile);
 	app_state_changed (tile->app, NULL, tile);
 
 	pixbuf = gs_app_get_pixbuf (app);
-	if (pixbuf != NULL)
+	if (pixbuf != NULL) {
 		gs_image_set_from_pixbuf (GTK_IMAGE (tile->image), pixbuf);
+	} else {
+		gtk_image_set_from_icon_name (GTK_IMAGE (tile->image),
+					      "application-x-executable",
+					      GTK_ICON_SIZE_DIALOG);
+	}
 	gtk_label_set_label (GTK_LABEL (tile->name), gs_app_get_name (app));
 
 	/* perhaps set custom css */
-	gs_utils_widget_set_css_app (app, GTK_WIDGET (tile),
-				     "GnomeSoftware::AppTile-css");
+	css = gs_app_get_metadata_item (app, "GnomeSoftware::AppTile-css");
+	gs_utils_widget_set_css (GTK_WIDGET (tile), css);
 
 	/* some kinds have boring summaries */
 	switch (gs_app_get_kind (app)) {

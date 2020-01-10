@@ -1,6 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2013-2016 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2015 Kalev Lember <klember@redhat.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -36,8 +37,6 @@ G_DECLARE_FINAL_TYPE (GsUpdateMonitor, gs_update_monitor, GS, UPDATE_MONITOR, GO
 GsUpdateMonitor	*gs_update_monitor_new			(GsApplication	*app);
 void		 gs_update_monitor_show_error		(GsUpdateMonitor *monitor,
 							 GsShell	*shell);
-GPermission	*gs_update_monitor_permission_get	(void);
-gboolean	 gs_update_monitor_is_managed		(void);
 
 G_END_DECLS
 

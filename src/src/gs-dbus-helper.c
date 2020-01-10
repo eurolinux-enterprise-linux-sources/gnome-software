@@ -1,6 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2013 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2015-2017 Kalev Lember <klember@redhat.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -27,12 +28,13 @@
 #include <gtk/gtk.h>
 #include <packagekit-glib2/packagekit.h>
 
+#include "gnome-software-private.h"
+
 #include "gs-dbus-helper.h"
 #include "gs-packagekit-generated.h"
 #include "gs-packagekit-modify2-generated.h"
 #include "gs-resources.h"
-#include "gs-shell-extras.h"
-#include "gs-utils.h"
+#include "gs-extras-page.h"
 
 struct _GsDbusHelper {
 	GObject			 parent;
@@ -271,9 +273,9 @@ is_show_confirm_search_set (const gchar *interaction)
 }
 
 static void
-notify_search_resources (GsShellExtrasMode   mode,
-                         const gchar        *desktop_id,
-                         gchar             **resources)
+notify_search_resources (GsExtrasPageMode   mode,
+                         const gchar       *desktop_id,
+                         gchar            **resources)
 {
 	const gchar *app_name = NULL;
 	const gchar *mode_string;
@@ -294,25 +296,25 @@ notify_search_resources (GsShellExtrasMode   mode,
 	}
 
 	switch (mode) {
-	case GS_SHELL_EXTRAS_MODE_INSTALL_MIME_TYPES:
+	case GS_EXTRAS_PAGE_MODE_INSTALL_MIME_TYPES:
 		/* TRANSLATORS: this is a notification displayed when an app needs additional MIME types. */
 		body = g_strdup_printf (_("%s is requesting additional file format support."), app_name);
 		/* TRANSLATORS: notification title */
 		title = _("Additional MIME Types Required");
 		break;
-	case GS_SHELL_EXTRAS_MODE_INSTALL_FONTCONFIG_RESOURCES:
+	case GS_EXTRAS_PAGE_MODE_INSTALL_FONTCONFIG_RESOURCES:
 		/* TRANSLATORS: this is a notification displayed when an app needs additional fonts. */
 		body = g_strdup_printf (_("%s is requesting additional fonts."), app_name);
 		/* TRANSLATORS: notification title */
 		title = _("Additional Fonts Required");
 		break;
-	case GS_SHELL_EXTRAS_MODE_INSTALL_GSTREAMER_RESOURCES:
+	case GS_EXTRAS_PAGE_MODE_INSTALL_GSTREAMER_RESOURCES:
 		/* TRANSLATORS: this is a notification displayed when an app needs additional codecs. */
 		body = g_strdup_printf (_("%s is requesting additional multimedia codecs."), app_name);
 		/* TRANSLATORS: notification title */
 		title = _("Additional Multimedia Codecs Required");
 		break;
-	case GS_SHELL_EXTRAS_MODE_INSTALL_PRINTER_DRIVERS:
+	case GS_EXTRAS_PAGE_MODE_INSTALL_PRINTER_DRIVERS:
 		/* TRANSLATORS: this is a notification displayed when an app needs additional printer drivers. */
 		body = g_strdup_printf (_("%s is requesting additional printer drivers."), app_name);
 		/* TRANSLATORS: notification title */
@@ -326,7 +328,7 @@ notify_search_resources (GsShellExtrasMode   mode,
 		break;
 	}
 
-	mode_string = gs_shell_extras_mode_to_string (mode);
+	mode_string = gs_extras_page_mode_to_string (mode);
 
 	n = g_notification_new (title);
 	g_notification_set_body (n, body);
@@ -337,11 +339,11 @@ notify_search_resources (GsShellExtrasMode   mode,
 }
 
 static void
-install_resources (GsShellExtrasMode   mode,
-                   gchar             **resources,
-                   const gchar        *interaction,
-                   const gchar        *desktop_id,
-                   GVariant           *platform_data)
+install_resources (GsExtrasPageMode   mode,
+                   gchar            **resources,
+                   const gchar       *interaction,
+                   const gchar       *desktop_id,
+                   GVariant          *platform_data)
 {
 	GApplication *app;
 	const gchar *mode_string;
@@ -358,7 +360,7 @@ install_resources (GsShellExtrasMode   mode,
 	}
 
 	app = g_application_get_default ();
-	mode_string = gs_shell_extras_mode_to_string (mode);
+	mode_string = gs_extras_page_mode_to_string (mode);
 	g_action_group_activate_action (G_ACTION_GROUP (app), "install-resources",
 	                                g_variant_new ("(s^ass)", mode_string, resources, startup_id));
 }
@@ -373,7 +375,7 @@ handle_modify_install_package_files (GsPackageKitModify		 *object,
 {
 	g_debug ("****** Modify.InstallPackageFiles");
 
-	notify_search_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PACKAGE_FILES, NULL, arg_files);
+	notify_search_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PACKAGE_FILES, NULL, arg_files);
 	gs_package_kit_modify_complete_install_package_files (object, invocation);
 
 	return TRUE;
@@ -389,7 +391,7 @@ handle_modify_install_provide_files (GsPackageKitModify		 *object,
 {
 	g_debug ("****** Modify.InstallProvideFiles");
 
-	notify_search_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PROVIDE_FILES, NULL, arg_files);
+	notify_search_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PROVIDE_FILES, NULL, arg_files);
 	gs_package_kit_modify_complete_install_provide_files (object, invocation);
 
 	return TRUE;
@@ -405,7 +407,7 @@ handle_modify_install_package_names (GsPackageKitModify		 *object,
 {
 	g_debug ("****** Modify.InstallPackageNames");
 
-	notify_search_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PACKAGE_NAMES, NULL, arg_package_names);
+	notify_search_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PACKAGE_NAMES, NULL, arg_package_names);
 	gs_package_kit_modify_complete_install_package_names (object, invocation);
 
 	return TRUE;
@@ -421,7 +423,7 @@ handle_modify_install_mime_types (GsPackageKitModify    *object,
 {
 	g_debug ("****** Modify.InstallMimeTypes");
 
-	notify_search_resources (GS_SHELL_EXTRAS_MODE_INSTALL_MIME_TYPES, NULL, arg_mime_types);
+	notify_search_resources (GS_EXTRAS_PAGE_MODE_INSTALL_MIME_TYPES, NULL, arg_mime_types);
 	gs_package_kit_modify_complete_install_mime_types (object, invocation);
 
 	return TRUE;
@@ -437,7 +439,7 @@ handle_modify_install_fontconfig_resources (GsPackageKitModify		 *object,
 {
 	g_debug ("****** Modify.InstallFontconfigResources");
 
-	notify_search_resources (GS_SHELL_EXTRAS_MODE_INSTALL_FONTCONFIG_RESOURCES, NULL, arg_resources);
+	notify_search_resources (GS_EXTRAS_PAGE_MODE_INSTALL_FONTCONFIG_RESOURCES, NULL, arg_resources);
 	gs_package_kit_modify_complete_install_fontconfig_resources (object, invocation);
 
 	return TRUE;
@@ -453,7 +455,7 @@ handle_modify_install_gstreamer_resources (GsPackageKitModify	 *object,
 {
 	g_debug ("****** Modify.InstallGStreamerResources");
 
-	notify_search_resources (GS_SHELL_EXTRAS_MODE_INSTALL_GSTREAMER_RESOURCES, NULL, arg_resources);
+	notify_search_resources (GS_EXTRAS_PAGE_MODE_INSTALL_GSTREAMER_RESOURCES, NULL, arg_resources);
 	gs_package_kit_modify_complete_install_gstreamer_resources (object, invocation);
 
 	return TRUE;
@@ -473,7 +475,7 @@ handle_modify_install_resources (GsPackageKitModify	 *object,
 	g_debug ("****** Modify.InstallResources");
 
 	if (g_strcmp0 (arg_type, "plasma-service") == 0) {
-		notify_search_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PLASMA_RESOURCES, NULL, arg_resources);
+		notify_search_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PLASMA_RESOURCES, NULL, arg_resources);
 		ret = TRUE;
 	} else {
 		ret = FALSE;
@@ -493,7 +495,7 @@ handle_modify_install_printer_drivers (GsPackageKitModify	 *object,
 {
 	g_debug ("****** Modify.InstallPrinterDrivers");
 
-	notify_search_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PRINTER_DRIVERS, NULL, arg_device_ids);
+	notify_search_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PRINTER_DRIVERS, NULL, arg_device_ids);
 	gs_package_kit_modify_complete_install_printer_drivers (object, invocation);
 
 	return TRUE;
@@ -510,7 +512,7 @@ handle_modify2_install_package_files (GsPackageKitModify2	 *object,
 {
 	g_debug ("****** Modify2.InstallPackageFiles");
 
-	install_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PACKAGE_FILES, arg_files, arg_interaction, arg_desktop_id, arg_platform_data);
+	install_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PACKAGE_FILES, arg_files, arg_interaction, arg_desktop_id, arg_platform_data);
 	gs_package_kit_modify2_complete_install_package_files (object, invocation);
 
 	return TRUE;
@@ -527,7 +529,7 @@ handle_modify2_install_provide_files (GsPackageKitModify2	 *object,
 {
 	g_debug ("****** Modify2.InstallProvideFiles");
 
-	install_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PROVIDE_FILES, arg_files, arg_interaction, arg_desktop_id, arg_platform_data);
+	install_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PROVIDE_FILES, arg_files, arg_interaction, arg_desktop_id, arg_platform_data);
 	gs_package_kit_modify2_complete_install_provide_files (object, invocation);
 
 	return TRUE;
@@ -544,7 +546,7 @@ handle_modify2_install_package_names (GsPackageKitModify2	 *object,
 {
 	g_debug ("****** Modify2.InstallPackageNames");
 
-	install_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PACKAGE_NAMES, arg_package_names, arg_interaction, arg_desktop_id, arg_platform_data);
+	install_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PACKAGE_NAMES, arg_package_names, arg_interaction, arg_desktop_id, arg_platform_data);
 	gs_package_kit_modify2_complete_install_package_names (object, invocation);
 
 	return TRUE;
@@ -561,7 +563,7 @@ handle_modify2_install_mime_types (GsPackageKitModify2	 *object,
 {
 	g_debug ("****** Modify2.InstallMimeTypes");
 
-	install_resources (GS_SHELL_EXTRAS_MODE_INSTALL_MIME_TYPES, arg_mime_types, arg_interaction, arg_desktop_id, arg_platform_data);
+	install_resources (GS_EXTRAS_PAGE_MODE_INSTALL_MIME_TYPES, arg_mime_types, arg_interaction, arg_desktop_id, arg_platform_data);
 	gs_package_kit_modify2_complete_install_mime_types (object, invocation);
 
 	return TRUE;
@@ -578,7 +580,7 @@ handle_modify2_install_fontconfig_resources (GsPackageKitModify2	 *object,
 {
 	g_debug ("****** Modify2.InstallFontconfigResources");
 
-	install_resources (GS_SHELL_EXTRAS_MODE_INSTALL_FONTCONFIG_RESOURCES, arg_resources, arg_interaction, arg_desktop_id, arg_platform_data);
+	install_resources (GS_EXTRAS_PAGE_MODE_INSTALL_FONTCONFIG_RESOURCES, arg_resources, arg_interaction, arg_desktop_id, arg_platform_data);
 	gs_package_kit_modify2_complete_install_fontconfig_resources (object, invocation);
 
 	return TRUE;
@@ -595,7 +597,7 @@ handle_modify2_install_gstreamer_resources (GsPackageKitModify2		 *object,
 {
 	g_debug ("****** Modify2.InstallGStreamerResources");
 
-	install_resources (GS_SHELL_EXTRAS_MODE_INSTALL_GSTREAMER_RESOURCES, arg_resources, arg_interaction, arg_desktop_id, arg_platform_data);
+	install_resources (GS_EXTRAS_PAGE_MODE_INSTALL_GSTREAMER_RESOURCES, arg_resources, arg_interaction, arg_desktop_id, arg_platform_data);
 	gs_package_kit_modify2_complete_install_gstreamer_resources (object, invocation);
 
 	return TRUE;
@@ -616,7 +618,7 @@ handle_modify2_install_resources (GsPackageKitModify2	 *object,
 	g_debug ("****** Modify2.InstallResources");
 
 	if (g_strcmp0 (arg_type, "plasma-service") == 0) {
-		install_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PLASMA_RESOURCES, arg_resources, arg_interaction, arg_desktop_id, arg_platform_data);
+		install_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PLASMA_RESOURCES, arg_resources, arg_interaction, arg_desktop_id, arg_platform_data);
 		ret = TRUE;
 	} else {
 		ret = FALSE;
@@ -637,7 +639,7 @@ handle_modify2_install_printer_drivers (GsPackageKitModify2	 *object,
 {
 	g_debug ("****** Modify2.InstallPrinterDrivers");
 
-	install_resources (GS_SHELL_EXTRAS_MODE_INSTALL_PRINTER_DRIVERS, arg_device_ids, arg_interaction, arg_desktop_id, arg_platform_data);
+	install_resources (GS_EXTRAS_PAGE_MODE_INSTALL_PRINTER_DRIVERS, arg_device_ids, arg_interaction, arg_desktop_id, arg_platform_data);
 	gs_package_kit_modify2_complete_install_printer_drivers (object, invocation);
 
 	return TRUE;
@@ -671,7 +673,7 @@ bus_gotten_cb (GObject      *source_object,
 
 	connection = g_bus_get_finish (res, &error);
 	if (connection == NULL) {
-		if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+		if (!g_error_matches (error, GS_PLUGIN_ERROR, GS_PLUGIN_ERROR_CANCELLED))
 			g_warning ("Could not get session bus: %s", error->message);
 		return;
 	}

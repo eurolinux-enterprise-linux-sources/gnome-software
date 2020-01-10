@@ -1,6 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2016 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2017 Kalev Lember <klember@redhat.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -22,9 +23,7 @@
 #include "config.h"
 
 #include <glib/gi18n.h>
-#include <gtk/gtk.h>
 
-#include "gs-auth.h"
 #include "gs-auth-dialog.h"
 #include "gs-common.h"
 
@@ -118,7 +117,7 @@ gs_auth_dialog_authenticate_cb (GObject *source,
 	gtk_widget_set_visible (dialog->box_error, FALSE);
 
 	/* we failed */
-	if (!gs_plugin_loader_app_action_finish (plugin_loader, res, &error)) {
+	if (!gs_plugin_loader_job_action_finish (plugin_loader, res, &error)) {
 		const gchar *url;
 
 		if (g_error_matches (error,
@@ -134,20 +133,13 @@ gs_auth_dialog_authenticate_cb (GObject *source,
 		if (url != NULL) {
 			g_autoptr(GError) error_local = NULL;
 			g_debug ("showing link in: %s", error->message);
-#if GTK_CHECK_VERSION (3, 22, 0)
 			if (!gtk_show_uri_on_window (GTK_WINDOW (dialog),
 			                             url,
 			                             GDK_CURRENT_TIME,
-			                             &error)) {
+			                             &error_local)) {
 				g_warning ("failed to show URI %s: %s",
 				           url, error_local->message);
 			}
-#else
-			if (!gtk_show_uri (NULL, url, GDK_CURRENT_TIME, &error_local)) {
-				g_warning ("failed to show URI %s: %s",
-					   url, error_local->message);
-			}
-#endif
 			return;
 		}
 
@@ -169,19 +161,26 @@ gs_auth_dialog_authenticate_cb (GObject *source,
 static void
 gs_auth_dialog_continue_cb (GtkWidget *widget, GsAuthDialog *dialog)
 {
-	GsPluginAction action = GS_PLUGIN_ACTION_AUTH_LOGIN;
+	g_autoptr(GsPluginJob) plugin_job = NULL;
 
 	gtk_widget_set_sensitive (dialog->box_dialog, FALSE);
 	gtk_widget_set_sensitive (dialog->button_continue, FALSE);
 
 	/* alternate actions */
-	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->radiobutton_lost_pwd)))
-		action = GS_PLUGIN_ACTION_AUTH_LOST_PASSWORD;
-	else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->radiobutton_register)))
-		action = GS_PLUGIN_ACTION_AUTH_REGISTER;
-	gs_plugin_loader_auth_action_async (dialog->plugin_loader,
-					    dialog->auth,
-					    action,
+	if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->radiobutton_lost_pwd))) {
+		plugin_job = gs_plugin_job_newv (GS_PLUGIN_ACTION_AUTH_LOST_PASSWORD,
+						 "auth", dialog->auth,
+						 NULL);
+	} else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (dialog->radiobutton_register))) {
+		plugin_job = gs_plugin_job_newv (GS_PLUGIN_ACTION_AUTH_REGISTER,
+						 "auth", dialog->auth,
+						 NULL);
+	} else {
+		plugin_job = gs_plugin_job_newv (GS_PLUGIN_ACTION_AUTH_LOGIN,
+						 "auth", dialog->auth,
+						 NULL);
+	}
+	gs_plugin_loader_job_process_async (dialog->plugin_loader, plugin_job,
 					    dialog->cancellable,
 					    gs_auth_dialog_authenticate_cb,
 					    dialog);

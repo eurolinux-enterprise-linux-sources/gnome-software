@@ -1,6 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  * Copyright (C) 2013 Richard Hughes <richard@hughsie.com>
+ * Copyright (C) 2015-2016 Kalev Lember <klember@redhat.com>
  *
  * Licensed under the GNU General Public License Version 2
  *
@@ -22,11 +23,7 @@
 #ifndef GS_PAGE_H
 #define GS_PAGE_H
 
-#include <glib-object.h>
-#include <gtk/gtk.h>
-
 #include "gs-shell.h"
-#include "gs-plugin-loader.h"
 
 G_BEGIN_DECLS
 
@@ -44,8 +41,17 @@ struct _GsPageClass
 						 GsApp		 *app);
 	void		(*switch_to)		(GsPage		 *page,
 						 gboolean	  scroll_up);
+	void		(*switch_from)		(GsPage		 *page);
 	void		(*reload)		(GsPage		 *page);
+	gboolean	(*setup)		(GsPage		 *page,
+						 GsShell	*shell,
+						 GsPluginLoader	*plugin_loader,
+						 GtkBuilder	*builder,
+						 GCancellable	*cancellable,
+						 GError		**error);
 };
+
+typedef void (*GsPageAuthCallback) (GsPage *page, gboolean authorized, gpointer user_data);
 
 GsPage		*gs_page_new				(void);
 GtkWidget	*gs_page_get_header_start_widget	(GsPage		*page);
@@ -54,9 +60,16 @@ void		 gs_page_set_header_start_widget	(GsPage		*page,
 GtkWidget	*gs_page_get_header_end_widget		(GsPage		*page);
 void		 gs_page_set_header_end_widget		(GsPage		*page,
 							 GtkWidget	*widget);
-void		 gs_page_install_app			(GsPage		*page,
-							 GsApp		*app,
-							 GCancellable	*cancellable);
+void		 gs_page_authenticate			(GsPage			*page,
+							 GsApp			*app,
+							 const gchar		*provider_id,
+							 GCancellable		*cancellable,
+							 GsPageAuthCallback	 callback,
+							 gpointer		 user_data);
+void		 gs_page_install_app			(GsPage			*page,
+							 GsApp			*app,
+							 GsShellInteraction	interaction,
+							 GCancellable		*cancellable);
 void		 gs_page_remove_app			(GsPage		*page,
 							 GsApp		*app,
 							 GCancellable	*cancellable);
@@ -74,11 +87,14 @@ void		 gs_page_shortcut_remove		(GsPage		*page,
 							 GCancellable	*cancellable);
 void		 gs_page_switch_to			(GsPage		*page,
 							 gboolean	 scroll_up);
+void		 gs_page_switch_from			(GsPage		*page);
 void		 gs_page_reload				(GsPage		*page);
-void		 gs_page_setup				(GsPage		*page,
+gboolean	 gs_page_setup				(GsPage		*page,
 							 GsShell	*shell,
 							 GsPluginLoader	*plugin_loader,
-							 GCancellable	*cancellable);
+							 GtkBuilder	*builder,
+							 GCancellable	*cancellable,
+							 GError		**error);
 gboolean	 gs_page_is_active			(GsPage		*page);
 
 G_END_DECLS

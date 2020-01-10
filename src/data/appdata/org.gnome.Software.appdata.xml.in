@@ -4,41 +4,41 @@
   <id>org.gnome.Software.desktop</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-2.0+</project_license>
-  <_name>GNOME Software</_name>
-  <_summary>Application manager for GNOME</_summary>
+  <name>GNOME Software</name>
+  <summary>Application manager for GNOME</summary>
   <description>
-    <_p>
+    <p>
       Software allows you to find and install new applications and system
       extensions and remove existing installed applications.
-    </_p>
-    <_p>
+    </p>
+    <p>
       GNOME Software showcases featured and popular applications with useful
       descriptions and multiple screenshots per application.
       Applications can be found either through browsing the list of categories
       or by searching.
       It also allows you to update your system using an offline update.
-    </_p>
+    </p>
   </description>
   <screenshots>
     <screenshot height="675" width="1200" type="default">
       <image>https://git.gnome.org/browse/gnome-software/plain/data/appdata/ss-overview.png</image>
-      <_caption>Overview panel</_caption>
+      <caption>Overview panel</caption>
     </screenshot>
     <screenshot height="675" width="1200">
       <image>https://git.gnome.org/browse/gnome-software/plain/data/appdata/ss-details.png</image>
-      <_caption>Details panel</_caption>
+      <caption>Details panel</caption>
     </screenshot>
     <screenshot height="675" width="1200">
       <image>https://git.gnome.org/browse/gnome-software/plain/data/appdata/ss-installed.png</image>
-      <_caption>Installed panel</_caption>
+      <caption>Installed panel</caption>
     </screenshot>
     <screenshot height="675" width="1200">
       <image>https://git.gnome.org/browse/gnome-software/plain/data/appdata/ss-updates.png</image>
-      <_caption>Updates panel</_caption>
+      <caption>Updates panel</caption>
     </screenshot>
     <screenshot height="675" width="1200">
       <image>https://git.gnome.org/browse/gnome-software/plain/data/appdata/ss-updates-details.png</image>
-      <_caption>The update details</_caption>
+      <caption>The update details</caption>
     </screenshot>
   </screenshots>
 
@@ -46,70 +46,487 @@
    Validate with `appstream-util validate *.appdata.xml`
   -->
   <releases>
-    <release date="2017-03-14" version="3.22.7">
+    <release date="2018-05-09" version="3.28.2">
       <description>
-        <p>This stable release fixes a few minor flatpak issues and improves the layout for gnome-maps featured banner.</p>
+        <p>
+          This is a stable release with the following changes:
+        </p>
+        <ul>
+          <li>Add a warning when enabling the LVFS remote</li>
+          <li>Show a notification when failing to open an url or a local file</li>
+          <li>Fix multiple flatpak refreshes with new libflatpak</li>
+          <li>Build fixes for FreeBSD</li>
+          <li>Icon loading fixes for snap</li>
+        </ul>
+        <p>This release also updates translations.</p>
       </description>
     </release>
-    <release date="2017-03-08" version="3.22.6">
+    <release date="2018-04-09" version="3.28.1">
       <description>
-        <p>This stable release fixes the following bugs:</p>
+        <p>
+          This is a stable release with the following changes:
+        </p>
+        <ul>
+          <li>Fix a regression with opening results from gnome-shell search</li>
+          <li>Show "Source: " tag in gnome-shell search when we have multiple matches</li>
+          <li>Improve unknown license tag color scheme on details page</li>
+          <li>Don't show installed icon on app tiles while still installing</li>
+          <li>Fix empty items appearing under OS Updates</li>
+          <li>Fix a regression that caused duplicate results in codec search</li>
+          <li>Fix an issue with passing username/password to packagekit proxy</li>
+          <li>Avoid crashing during first run with no network access</li>
+          <li>A number of rpm-ostree fixes, making it possible to trigger offline updates</li>
+          <li>Stop searching multiple times on search page</li>
+          <li>Update Fedora third party repositories "Find out more..." link</li>
+          <li>Fix an issue with in-app notifications failing with invalid markup errors</li>
+          <li>Improve purchase failure handling for the snap store</li>
+          <li>Fix a possible crash in snap plugin when adding screenshots</li>
+          <li>Various other crash and correctness fixes</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2018-03-12" version="3.28.0">
+      <description>
+        <p>
+          This is the first stable release for GNOME 3.28,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Fix the build on NixOS</li>
+          <li>Fix purchasing not working after authentication</li>
+          <li>Revert a commit that led to flatpak updates failing without any feedback</li>
+          <li>Make front page featured tile corners round to match other tiles</li>
+          <li>Fix in-app notification close button alignment</li>
+          <li>Several fixes to make error notifications more useful</li>
+          <li>snap: Fix invalid metadata after cancelled refine</li>
+          <li>snap: Launch command line snaps with 'snap run'</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2018-03-05" version="3.27.92">
+      <description>
+        <p>
+          This is an unstable release in the 3.27 development series,
+          marking the end of the development cycle. Next release will be 3.28.0!
+        </p>
+        <ul>
+          <li>Removal of global plugin cache, simplifying gnome-software internals</li>
+          <li>Software Repositories dialog got another batch of improvements and UI changes</li>
+          <li>GNOME Shell Extensions repository and fwupd repositories are now shown in the Software Repositories dialog</li>
+          <li>Shell extensions handling through PackageKit was improved, fixing a long standing bug where we were unable to remove shell extension packages</li>
+          <li>Category page rewrite that landed earlier this cycle went through UI review and got a number of fixes</li>
+          <li>Package version comparison in the updates dialog was fixed and should no longer incorrectly show updates as downgrades</li>
+          <li>Distro upgrade notifications are now rate limited to once per week</li>
+          <li>Install buttons in codec install view that got lost in the 3.22 cycle are now back</li>
+          <li>Various paper cuts with distro upgrades were fixed</li>
+          <li>Various fixes to installing apps from yum repos that have enabled=0 enabled_metadata=1</li>
+          <li>Various other correctness and warning fixes</li>
+          <li>Distros: Minimum supported fwupd version is now 1.0.3</li>
+          <li>Distros: We've released PackageKit 1.1.9 that has string changes to match gnome-software 3.28</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2018-02-14" version="3.27.90">
+      <description>
+        <p>
+          This is an unstable release in the 3.27 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>The Software Sources dialog was renamed to Software Repositories and rewritten</li>
+          <li>Fedora Workstation third party repository handling was rewritten and should be more robust</li>
+          <li>Improved handling of metered network connections, making sure we cancel any downloads when changing to a metered connection</li>
+          <li>Limit the number of parallel operations depending on the installed CPU</li>
+          <li>Improved handling of pending installs when there's no network connection</li>
+          <li>Unused ostree and rpm plugins were dropped</li>
+          <li>Switch from GtkSpell to gspell</li>
+          <li>Improve alignment on the updates page</li>
+          <li>Do not show missing screenshot error for fonts that have screenshots</li>
+          <li>Fix various issues on Ubuntu when purchasing apps</li>
+          <li>Fix an issue that led to duplicate categories appearing on the overview page</li>
+          <li>Various memory leak and correctness fixes</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2018-01-08" version="3.27.4">
+      <description>
+        <p>
+          This is an unstable release in the 3.27 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Add missing locking to gs_plugin_cache_remove(), fixing a possible crash</li>
+          <li>Fix various memory leaks spotted by valgrind</li>
+          <li>Fix a possible crash triggered by the fwupd plugin</li>
+          <li>Do not emit critical warnings when reviewing OS Updates</li>
+          <li>fwupd: Use the custom user-agent when downloading firmware</li>
+          <li>overview page: Fix a crash when we have no featured apps</li>
+          <li>packagekit: Implement repository enabling</li>
+          <li>Fix hover CSS for "unknown" and "nonfree" license buttons</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-11-13" version="3.27.3">
+      <description>
+        <p>
+          This is an unstable release in the 3.27 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Fix crashes in the repos plugin due to missing locking</li>
+          <li>Add translated strings for the new OARS v1.1 additions</li>
+          <li>Work around Firefox deleting rpm/deb files downloaded to /tmp when closing</li>
+          <li>Log errors to console when starting from command line</li>
+          <li>Do not enable distro-upgrades when updates are disabled</li>
+          <li>Do not require the user to keep clicking 'More reviews' after each click</li>
+          <li>Fix a critical when updating (flatpak) packages live</li>
+          <li>fwupd: Do not crash when trying to list a locked device</li>
+          <li>fwupd: Prepend the vendor name to the device name if not included</li>
+          <li>Improve SPDX ID parsing when working out if it is 'free'</li>
+          <li>packagekit: Do not crash when getting an invalid ID from PackageKit</li>
+          <li>packagekit: Support apt:// URLs</li>
+          <li>Various fixes to the snap plugin</li>
+          <li>Do not crash when closing the source dialog while it is loading</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-11-13" version="3.27.2">
+      <description>
+        <p>
+          This is an unstable release in the 3.27 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Redesigned category view</li>
+          <li>Better notifications for completed distro upgrades</li>
+          <li>Number of test suite fixes to pave way for continous integration tests</li>
+          <li>Improved support for running on low res displays</li>
+          <li>Various fixes to internal state handling</li>
+          <li>Allow linking to specified proprietary licenses</li>
+          <li>Don't use versioned subdirectories under ~/.cache/gnome-software</li>
+          <li>Only show in-app notifications for interactive user actions</li>
+          <li>Various fixes for flatpak, fwupd, and snap support</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-11-09" version="3.26.2">
+      <description>
+        <p>
+          This is a stable release with the following changes:
+        </p>
+        <ul>
+          <li>Various fixes to cancellable handling, making it more robust to cancel install/remove operations</li>
+          <li>Fix a common crash in Fedora distro upgrades plugin</li>
+          <li>Fix showing N+2 Fedora upgrades</li>
+          <li>Fix flatpak updates inadvertently triggering a reboot</li>
+          <li>Revert plugin GType registering changes that broke app "adopting"</li>
+          <li>Various flatpak plugin fixes</li>
+          <li>Various snap plugin fixes</li>
+          <li>Bump fwupd required dep to 0.9.7 and support building with new 1.0.0 API</li>
+          <li>Avoid erroring out for operations that return more than 500 results (distro upgrades, getting gnome-shell extensions list)</li>
+          <li>Fix a few memory leaks</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-10-02" version="3.26.1">
+      <description>
+        <p>
+          This is a stable release with the following changes:
+        </p>
+        <ul>
+          <li>Fix memory leak in "external appstream" plugin</li>
+          <li>Don't translate an icon name in the Punjabi translation</li>
+          <li>Fix critical warning in the fwupd plugin if the update URI isn't set</li>
+          <li>Fix Addon categories not showing</li>
+          <li>Fix crash in PackageKit plugin if reporting progress with no current application</li>
+          <li>Revert a change in the snapd plugin which can cause operations to fail or hang in some situations</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-09-11" version="3.26.0">
+      <description>
+        <p>
+          This is the first stable release for GNOME 3.26,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Use the new fwupd API in 0.9.7 to avoid when a reboot is required</li>
+          <li>Pass the complete proxy settings to PackageKit</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Do not crash when emitting an uncommon error message</li>
+          <li>Do not show a critical warning with new versions of fwupd</li>
+          <li>Do not show an error for a remote-less flatpakref application</li>
+          <li>Don't refine PackageKit packages after we've been cancelled</li>
+          <li>Fix a possible crash on 32 bit systems</li>
+          <li>Fix GNOME Shell search results for snap applications</li>
+          <li>Properly disable shell-extensions when not running GNOME Shell</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-08-21" version="3.25.91">
+      <description>
+        <p>
+          This is an unstable release in the 3.25 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Add a simple donation button on the details page</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Allow plugins to say that installation cannot be cancelled</li>
+          <li>Fix displaying the info bar for the Shell Extensions category</li>
+          <li>Use first featured snap as the featured app</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-08-07" version="3.25.90">
+      <description>
+        <p>
+          This is an unstable release in the 3.25 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Add a simple donation button on the details page</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Do not crash if the child schema is invalid</li>
+          <li>Don't log a warning when clicking the the 'more results' search entry</li>
+          <li>Fixed subcategory names localization</li>
+          <li>Ensure flatpak remote names are valid</li>
+          <li>Fix critical warning with new versions of the fwupd daemon</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-07-21" version="3.25.4">
+      <description>
+        <p>
+          This is an unstable release in the 3.25 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Add new rpm-ostree integration for Fedora Atomic Workstation</li>
+          <li>Install the Flatpak runtime as part of the application install phase</li>
+          <li>Split OS updates up into multiple sections and show the target version</li>
+          <li>Support compatibility IDs when getting reviews from the ODRS</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Cancel plugin jobs if they take too much time</li>
+          <li>Correctly find already installed flatpak runtimes</li>
+          <li>Do not show an error for a flatpakref when broken remotes exist</li>
+          <li>Don't show the screenshot section for runtimes</li>
+          <li>Fix authentication prompt not showing when using snapd</li>
+          <li>Make license buttons buttons actually look clickable</li>
+          <li>Make the review moderator panel easier to use</li>
+          <li>Only show snaps as sandboxed if snapd supports confinement</li>
+          <li>Respect the per-user or per-system install preferences</li>
+          <li>Return the correct installed state for user/system flatpak remotes</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-06-22" version="3.25.3">
+      <description>
+        <p>
+          This is an unstable release in the 3.25 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Add a banner designer utility</li>
+          <li>Add the initial support to support purchasable apps</li>
+          <li>Automatically install flatpak icon themes and GTK themes</li>
+          <li>Restyle the updates panel to have a separate sections</li>
+          <li>Show a notification in the updates page when the OS is end of life</li>
+          <li>Show recently updated applications on the overview page</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Add snap self tests and provide more data to the details panel</li>
+          <li>Allow compiling with newer versions of meson</li>
+          <li>Do not crash when sending progress reports while refreshing</li>
+          <li>Don't trigger systemd for every single offline update</li>
+          <li>Ensure all related flatpak applications get installed</li>
+          <li>Ensure we use the gnome-desktop support if enabled</li>
+          <li>Fix searching for codecs on Ubuntu</li>
+          <li>Show a better status messages when downloading metadata</li>
+          <li>Show a pulsing progressbar if plugins do not report progress</li>
+          <li>Show the PackageKit interactive dialog when required</li>
+          <li>Support updating metadata from multiple fwupd remotes</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-05-08" version="3.25.2">
+      <description>
+        <p>
+          This is an unstable release in the 3.25 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Allow AppStream to be downloaded out-of-band per-user</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Do not initialize plugins in every instance</li>
+          <li>Fix the 'Show Details' context menu item in GNOME Shell</li>
+          <li>Use headerbar in toolbar-mode in Unity</li>
+          <li>Do not allow plugins to set the origin title in the UI</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-04-28" version="3.25.1">
+      <description>
+        <p>
+          This is an unstable release in the 3.25 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Truncate the search results if there are a large number</li>
+          <li>Use the complete source as a search keyword</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Fall back to a stock icon for hardware drivers</li>
+          <li>Fix a crash when removing an addon</li>
+          <li>Fix a critical warning in the shell search provider</li>
+          <li>Fix popular-overrides to show the correct applications</li>
+          <li>Fix various failures to read from snapd</li>
+          <li>Make offline updates work when online updates are available</li>
+          <li>Never include the size of the runtime in the installed size</li>
+          <li>Respect the install preference when for flatpakref files</li>
+          <li>Use the developer name in preference to the project group</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-03-13" version="3.23.92">
+      <description>
+        <p>
+          This is an unstable release in the 3.23 development series,
+          with the following bug fixes:
+        </p>
+        <ul>
+          <li>Allow installing broken flatpakref files</li>
+          <li>Do not reload the updates list when updates are in progress</li>
+          <li>Reset the headerbar title when switching to the details page</li>
+          <li>Unconditionally show things that are in progress in the Installed page</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-02-27" version="3.23.91">
+      <description>
+        <p>
+          This is an unstable release in the 3.23 development series,
+          with the following improvements:
+        </p>
         <ul>
           <li>Add support for RuntimeRepo in flatpakref files</li>
-          <li>Avoid requesting elevated privileges just for viewing flatpakref details</li>
-          <li>Fix launching flatpak apps after updating</li>
+          <li>Allow the user to restart the currently running gnome-software instance</li>
+          <li>Never show components without AppData files</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Initialize progress to zero right before and after processing an action</li>
+          <li>Animate the removal of live updates</li>
+          <li>Add YaST as a default folder in gnome-shell overview</li>
+        </ul>
+        <p>This release also updates translations.</p>
+      </description>
+    </release>
+    <release date="2017-02-13" version="3.23.90">
+      <description>
+        <p>
+          This is an unstable release in the 3.23 development series,
+          with the following improvements:
+        </p>
+        <ul>
+          <li>Handle apt and snap URLs</li>
+          <li>Show the updates panel with sections</li>
+          <li>Sort the apps in the installed panel by kind</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Add a more detailed error message when AC power is required</li>
+          <li>Do not hardcode the gnome-software application name</li>
+          <li>Ensure firmware is downloaded when not cached</li>
+          <li>Fix a rather large memory leak when loading Steam data</li>
+          <li>Fix launching Flatpak apps after updating</li>
           <li>Install needed Flatpak runtimes when updating an app</li>
-          <li>Do not show related flatpak runtimes as separate entries</li>
-          <li>Improve internal locking, hopefully fixing a few hard-to-debug crashes</li>
-          <li>Fix a large memory leak in the steam plugin</li>
-          <li>Add keywords to match web apps and input methods</li>
-          <li>Fix a few user interface papercuts</li>
-        </ul>
-        <p>This release also updates translations.</p>
-      </description>
-    </release>
-    <release date="2017-01-16" version="3.22.5">
-      <description>
-        <p>This stable release fixes the following bugs:</p>
-        <ul>
-          <li>Fix local package installation</li>
-          <li>Fix codec and printer driver installation for packages without appdata</li>
-          <li>Fix update notes to show up on the Updates page</li>
-          <li>Add support for "+" operator at the end of SPDX license identifiers</li>
           <li>Only show the scary firmware warning for removable devices</li>
-          <li>Various fixes for flatpak support</li>
-          <li>Fix several potential crashers</li>
         </ul>
         <p>This release also updates translations.</p>
       </description>
     </release>
-    <release date="2016-12-08" version="3.22.4">
+    <release date="2016-12-15" version="3.23.3">
       <description>
-        <p>This stable release fixes the following bugs:</p>
+        <p>
+          This is an unstable release in the 3.23 development series,
+          with the following improvements:
+        </p>
         <ul>
-          <li>Add locking to GsApp to fix hard-to-debug thread related crashes</li>
-          <li>Fix various top crashers listed on Fedora's retrace server</li>
-          <li>Fix an issue that caused app addon install/removal to get triggered without user interaction</li>
-          <li>Make flatpakref installation work</li>
-          <li>Hide review buttons when there's no internet connection</li>
+          <li>Add an --install and --interaction CLI options</li>
+          <li>Add the installed size of the apps in the installed view</li>
+          <li>Always set a description for each notification</li>
+          <li>Show an in-app notification when installed plugins are changed</li>
+          <li>Use a set of stars to show the different star ratings</li>
+        </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Add a missing error check to fix a common crash on LiveDVD media</li>
+          <li>Add thread locking in GsApp to fix some common crashes</li>
+          <li>Allow upgrading to Fedora EOL releases</li>
+          <li>Don't allow review actions when offline</li>
+          <li>Ensure we actually schedule firmware updates for download</li>
+          <li>Fix the getting of PackageKit and flatpak update details</li>
+          <li>Hide some notifications when the new app is launched or the window is closed</li>
+          <li>Hide the screenshot placeholder for input methods and langpacks</li>
         </ul>
         <p>This release also updates translations.</p>
       </description>
     </release>
-    <release date="2016-12-01" version="3.22.3">
+    <release date="2016-11-21" version="3.23.2">
       <description>
-        <p>This stable release fixes the following bugs:</p>
+        <p>
+          This is an unstable release in the 3.23 development series,
+          with the following improvements:
+        </p>
         <ul>
-          <li>Misc. fixes to the search results page</li>
-          <li>Misc. flatpak bug and crasher fixes</li>
-          <li>Correctly raise the codec search window under the Wayland session</li>
-          <li>Improve spinner state handling on the updates page</li>
-          <li>Make it possible to upgrade two Fedora versions at a time</li>
-          <li>Fix a memory leak with every search request</li>
-          <li>Don't show screenshot placeholder for add-ons that can't have screenshots</li>
-          <li>Show an error if the screenshot download fails</li>
-          <li>Get the screenshot metadata from the GNOME Shell Extension JSON data</li>
+          <li>Add a setting for downloading updates on metered connections</li>
+          <li>Add content rating interface for games</li>
+          <li>Add support for pending updates that are applied on demand</li>
+          <li>Add support for the flatpak DefaultBranch feature</li>
+          <li>Allow showing an application review without a display name</li>
+          <li>Convert the modal failure dialogs to in-app notifications</li>
+          <li>Switch to using the ODRS server hosted by GNOME</li>
         </ul>
+        <p>The following bugs are also fixed:</p>
+        <ul>
+          <li>Always get the newest screenshot for GNOME Shell extensions</li>
+          <li>Avoid redownloading the same screenshots for different images</li>
+          <li>Don't download updates when low on power</li>
+          <li>Fix the growth in memory usage for every search request</li>
+          <li>Never show a 'back' button when showing search results</li>
+          <li>Show the search bar when the user does ctrl+f</li>
+        </ul>
+        <p>This release also updates translations.</p>
       </description>
     </release>
     <release date="2016-11-07" version="3.22.2">
@@ -651,6 +1068,9 @@
       </description>
     </release>
   </releases>
+  <provides>
+    <id>gnome-software.desktop</id>
+  </provides>
   <kudos>
     <kudo>AppMenu</kudo>
     <kudo>HiDpiIcon</kudo>
@@ -667,5 +1087,27 @@
   <compulsory_for_desktop>GNOME</compulsory_for_desktop>
   <project_group>GNOME</project_group>
   <translation type="gettext">gnome-software</translation>
-  <_developer_name>The GNOME Project</_developer_name>
+  <developer_name>The GNOME Project</developer_name>
+  <content_rating type="oars-1.0">
+    <content_attribute id="violence-cartoon">none</content_attribute>
+    <content_attribute id="violence-fantasy">none</content_attribute>
+    <content_attribute id="violence-realistic">none</content_attribute>
+    <content_attribute id="violence-bloodshed">none</content_attribute>
+    <content_attribute id="violence-sexual">none</content_attribute>
+    <content_attribute id="drugs-alcohol">none</content_attribute>
+    <content_attribute id="drugs-narcotics">none</content_attribute>
+    <content_attribute id="drugs-tobacco">none</content_attribute>
+    <content_attribute id="sex-nudity">none</content_attribute>
+    <content_attribute id="sex-themes">none</content_attribute>
+    <content_attribute id="language-profanity">none</content_attribute>
+    <content_attribute id="language-humor">none</content_attribute>
+    <content_attribute id="language-discrimination">none</content_attribute>
+    <content_attribute id="social-chat">moderate</content_attribute>
+    <content_attribute id="social-info">mild</content_attribute>
+    <content_attribute id="social-audio">none</content_attribute>
+    <content_attribute id="social-location">none</content_attribute>
+    <content_attribute id="social-contacts">none</content_attribute>
+    <content_attribute id="money-purchasing">none</content_attribute>
+    <content_attribute id="money-gambling">none</content_attribute>
+  </content_rating>
 </component>

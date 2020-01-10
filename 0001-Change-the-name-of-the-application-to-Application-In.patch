@@ -14,11 +14,11 @@ index 849a14c..116002f 100644
 +++ b/src/org.gnome.Software.desktop.in
 @@ -1,5 +1,5 @@
  [Desktop Entry]
--_Name=Software
-+_Name=Application Installer
- _Comment=Add, remove or update software on this computer
+-Name=Software
++Name=Application Installer
+ Comment=Add, remove or update software on this computer
+ # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
  Icon=org.gnome.Software
- Exec=gnome-software %U
 -- 
 2.4.3
 

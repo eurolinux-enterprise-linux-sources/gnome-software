@@ -1,70 +1,445 @@
-Version 3.22.7
+Version 3.28.2
 ~~~~~~~~~~~~~~
-Released: 2017-03-14
+Released: 2018-05-09
 
-This stable release fixes a few minor flatpak issues and improves the layout
-for gnome-maps featured banner.
+This is a stable release with the following changes:
+ * Add a warning when enabling the LVFS remote
+ * Show a notification when failing to open an url or a local file
+ * Fix multiple flatpak refreshes with new libflatpak
+ * Build fixes for FreeBSD
+ * Icon loading fixes for snap
 
-Version 3.22.6
+This release also updates translations.
+
+Version 3.28.1
 ~~~~~~~~~~~~~~
-Released: 2017-03-08
+Released: 2018-04-09
 
-This stable release fixes the following bugs:
+This is a stable release with the following changes:
+ * Fix a regression with opening results from gnome-shell search
+ * Show "Source: " tag in gnome-shell search when we have multiple matches
+ * Improve unknown license tag color scheme on details page
+ * Don't show installed icon on app tiles while still installing
+ * Fix empty items appearing under OS Updates
+ * Fix a regression that caused duplicate results in codec search
+ * Fix an issue with passing username/password to packagekit proxy
+ * Avoid crashing during first run with no network access
+ * A number of rpm-ostree fixes, making it possible to trigger offline updates
+ * Stop searching multiple times on search page
+ * Update Fedora third party repositories "Find out more..." link
+ * Fix an issue with in-app notifications failing with invalid markup errors
+ * Improve purchase failure handling for the snap store
+ * Fix a possible crash in snap plugin when adding screenshots
+ * Various other crash and correctness fixes
+
+This release also updates translations.
+
+Version 3.28.0
+~~~~~~~~~~~~~~
+Released: 2018-03-12
+
+This is the first stable release for GNOME 3.28, with the following
+improvements:
+ * Fix the build on NixOS
+ * Fix purchasing not working after authentication
+ * Revert a commit that led to flatpak updates failing without any feedback
+ * Make front page featured tile corners round to match other tiles
+ * Fix in-app notification close button alignment
+ * Several fixes to make error notifications more useful
+ * snap: Fix invalid metadata after cancelled refine
+ * snap: Launch command line snaps with 'snap run'
+
+This release also updates translations.
+
+Version 3.27.92
+~~~~~~~~~~~~~~~
+Released: 2018-03-05
+
+This is an unstable release in the 3.27 development series, marking the end of
+the development cycle. Next release will be 3.28.0!
+ * Removal of global plugin cache, simplifying gnome-software internals
+ * Software Repositories dialog got another batch of improvements and UI
+   changes
+ * GNOME Shell Extensions repository and fwupd repositories are now shown in
+   the Software Repositories dialog
+ * Shell extensions handling through PackageKit was improved, fixing a long
+   standing bug where we were unable to remove shell extension packages
+ * Category page rewrite that landed earlier this cycle went through UI review
+   and got a number of fixes
+ * Package version comparison in the updates dialog was fixed and should no
+   longer incorrectly show updates as downgrades
+ * Distro upgrade notifications are now rate limited to once per week
+ * Install buttons in codec install view that got lost in the 3.22 cycle are
+   now back
+ * Various paper cuts with distro upgrades were fixed
+ * Various fixes to installing apps from yum repos that have enabled=0
+   enabled_metadata=1
+ * Various other correctness and warning fixes
+ * Distros: Minimum supported fwupd version is now 1.0.3
+ * Distros: We've released PackageKit 1.1.9 that has string changes to match
+   gnome-software 3.28
+
+This release also updates translations.
+
+Version 3.27.90
+~~~~~~~~~~~~~~~
+Released: 2018-02-14
+
+This is an unstable release in the 3.27 development series, with the following
+improvements:
+ * The Software Sources dialog was renamed to Software Repositories and
+   rewritten
+ * Fedora Workstation third party repository handling was rewritten and should
+   be more robust
+ * Improved handling of metered network connections, making sure we cancel any
+   downloads when changing to a metered connection
+ * Limit the number of parallel operations depending on the installed CPU
+ * Improved handling of pending installs when there's no network connection
+ * Unused ostree and rpm plugins were dropped
+ * Switch from GtkSpell to gspell
+ * Improve alignment on the updates page
+ * Do not show missing screenshot error for fonts that have screenshots
+ * Fix various issues on Ubuntu when purchasing apps
+ * Fix an issue that led to duplicate categories appearing on the overview page
+ * Various memory leak and correctness fixes
+
+This release also updates translations.
+
+Version 3.27.4
+~~~~~~~~~~~~~~
+Released: 2018-01-08
+
+This is an unstable release in the 3.27 development series, with the following
+improvements:
+ * Add missing locking to gs_plugin_cache_remove(), fixing a possible crash
+ * Fix various memory leaks spotted by valgrind
+ * Fix a possible crash triggered by the fwupd plugin
+ * Do not emit critical warnings when reviewing OS Updates
+ * fwupd: Use the custom user-agent when downloading firmware
+ * overview page: Fix a crash when we have no featured apps
+ * packagekit: Implement repository enabling
+ * Fix hover CSS for "unknown" and "nonfree" license buttons
+
+This release also updates translations.
+
+Version 3.27.3
+~~~~~~~~~~~~~~
+Released: 2017-11-13
+
+This is an unstable release in the 3.27 development series, with the following
+improvements:
+ * Fix crashes in the repos plugin due to missing locking
+ * Add translated strings for the new OARS v1.1 additions
+ * Work around Firefox deleting rpm/deb files downloaded to /tmp when closing
+ * Log errors to console when starting from command line
+ * Do not enable distro-upgrades when updates are disabled
+ * Do not require the user to keep clicking 'More reviews' after each click
+ * Fix a critical when updating (flatpak) packages live
+ * fwupd: Do not crash when trying to list a locked device
+ * fwupd: Prepend the vendor name to the device name if not included
+ * Improve SPDX ID parsing when working out if it is 'free'
+ * packagekit: Do not crash when getting an invalid ID from PackageKit
+ * packagekit: Support apt:// URLs
+ * Various fixes to the snap plugin
+ * Do not crash when closing the source dialog while it is loading
+
+This release also updates translations.
+
+Version 3.27.2
+~~~~~~~~~~~~~~
+Released: 2017-11-13
+
+This is an unstable release in the 3.27 development series, with the following
+improvements:
+ * Redesigned category view
+ * Better notifications for completed distro upgrades
+ * Number of test suite fixes to pave way for continous integration tests
+ * Improved support for running on low res displays
+ * Various fixes to internal state handling
+ * Allow linking to specified proprietary licenses
+ * Don't use versioned subdirectories under ~/.cache/gnome-software
+ * Only show in-app notifications for interactive user actions
+ * Various fixes for flatpak, fwupd, and snap support
+
+This release also updates translations.
+
+Version 3.26.2
+~~~~~~~~~~~~~~
+Released: 2017-11-09
+
+This is a stable release with the following changes:
+ * Various fixes to cancellable handling, making it more robust to cancel
+   install/remove operations
+ * Fix a common crash in Fedora distro upgrades plugin
+ * Fix showing N+2 Fedora upgrades
+ * Fix flatpak updates inadvertently triggering a reboot
+ * Revert plugin GType registering changes that broke app "adopting"
+ * Various flatpak plugin fixes
+ * Various snap plugin fixes
+ * Bump fwupd required dep to 0.9.7 and support building with new 1.0.0 API
+ * Avoid erroring out for operations that return more than 500 results (distro
+   upgrades, getting gnome-shell extensions list)
+ * Fix a few memory leaks
+
+This release also updates translations.
+
+Version 3.26.1
+~~~~~~~~~~~~~~
+Released: 2017-10-02
+
+This is a stable release with the following changes:
+ * Fix memory leak in "external appstream" plugin
+ * Don't translate an icon name in the Punjabi translation
+ * Fix critical warning in the fwupd plugin if the update URI isn't set
+ * Fix Addon categories not showing
+ * Fix crash in PackageKit plugin if reporting progress with no current
+   application
+ * Revert a change in the snapd plugin which can cause operations to fail or
+   hang in some situations
+
+This release also updates translations.
+
+Version 3.26.0
+~~~~~~~~~~~~~~
+Released: 2017-09-11
+
+This is the first stable release for GNOME 3.26, with the following
+improvements:
+ * Use the new fwupd API in 0.9.7 to avoid when a reboot is required
+ * Pass the complete proxy settings to PackageKit
+
+The following bugs are also fixed:
+ * Do not crash when emitting an uncommon error message
+ * Do not show a critical warning with new versions of fwupd
+ * Do not show an error for a remote-less flatpakref application
+ * Don't refine PackageKit packages after we've been cancelled
+ * Fix a possible crash on 32 bit systems
+ * Fix GNOME Shell search results for snap applications
+ * Properly disable shell-extensions when not running GNOME Shell
+
+This release also updates translations.
+
+Version 3.25.91
+~~~~~~~~~~~~~~~
+Released: 2017-08-21
+
+This is an unstable release in the 3.25 development series, with the following
+improvements:
+ * Add a simple donation button on the details page
+
+The following bugs are also fixed:
+ * Allow plugins to say that installation cannot be cancelled
+ * Fix displaying the info bar for the Shell Extensions category
+ * Use first featured snap as the featured app
+
+This release also updates translations.
+
+Version 3.25.90
+~~~~~~~~~~~~~~~
+Released: 2017-08-07
+
+This is an unstable release in the 3.25 development series, with the following
+improvements:
+ * Add a simple donation button on the details page
+
+The following bugs are also fixed:
+ * Do not crash if the child schema is invalid
+ * Don't log a warning when clicking the the 'more results' search entry
+ * Fixed subcategory names localization
+ * Ensure flatpak remote names are valid
+ * Fix critical warning with new versions of the fwupd daemon
+
+This release also updates translations.
+
+Version 3.25.4
+~~~~~~~~~~~~~~
+Released: 2017-07-21
+
+This is an unstable release in the 3.25 development series, with the following
+improvements:
+ * Add new rpm-ostree integration for Fedora Atomic Workstation
+ * Install the Flatpak runtime as part of the application install phase
+ * Split OS updates up into multiple sections and show the target version
+ * Support compatibility IDs when getting reviews from the ODRS
+
+The following bugs are also fixed:
+ * Cancel plugin jobs if they take too much time
+ * Correctly find already installed flatpak runtimes
+ * Do not show an error for a flatpakref when broken remotes exist
+ * Don't show the screenshot section for runtimes
+ * Fix authentication prompt not showing when using snapd
+ * Make license buttons buttons actually look clickable
+ * Make the review moderator panel easier to use
+ * Only show snaps as sandboxed if snapd supports confinement
+ * Respect the per-user or per-system install preferences
+ * Return the correct installed state for user/system flatpak remotes
+
+This release also updates translations.
+
+Version 3.25.3
+~~~~~~~~~~~~~~
+Released: 2017-06-22
+
+This is an unstable release in the 3.25 development series, with the following
+improvements:
+ * Add a banner designer utility
+ * Add the initial support to support purchasable apps
+ * Automatically install flatpak icon themes and GTK themes
+ * Restyle the updates panel to have a separate sections
+ * Show a notification in the updates page when the OS is end of life
+ * Show recently updated applications on the overview page
+
+The following bugs are also fixed:
+ * Add snap self tests and provide more data to the details panel
+ * Allow compiling with newer versions of meson
+ * Do not crash when sending progress reports while refreshing
+ * Don't trigger systemd for every single offline update
+ * Ensure all related flatpak applications get installed
+ * Ensure we use the gnome-desktop support if enabled
+ * Fix searching for codecs on Ubuntu
+ * Show a better status messages when downloading metadata
+ * Show a pulsing progressbar if plugins do not report progress
+ * Show the PackageKit interactive dialog when required
+ * Support updating metadata from multiple fwupd remotes
+
+This release also updates translations.
+
+Version 3.25.2
+~~~~~~~~~~~~~~
+Released: 2017-05-08
+
+This is an unstable release in the 3.25 development series, with the following
+improvements:
+ * Allow AppStream to be downloaded out-of-band per-user
+
+The following bugs are also fixed:
+ * Do not initialize plugins in every instance
+ * Fix the 'Show Details' context menu item in GNOME Shell
+ * Use headerbar in toolbar-mode in Unity
+ * Do not allow plugins to set the origin title in the UI
+
+This release also updates translations.
+
+Version 3.25.1
+~~~~~~~~~~~~~~
+Released: 2017-04-28
+
+This is an unstable release in the 3.25 development series, with the following
+improvements:
+ * Truncate the search results if there are a large number
+ * Use the complete source as a search keyword
+
+The following bugs are also fixed:
+ * Fall back to a stock icon for hardware drivers
+ * Fix a crash when removing an addon
+ * Fix a critical warning in the shell search provider
+ * Fix popular-overrides to show the correct applications
+ * Fix various failures to read from snapd
+ * Make offline updates work when online updates are available
+ * Never include the size of the runtime in the installed size
+ * Respect the install preference when for flatpakref files
+ * Use the developer name in preference to the project group
+
+This release also updates translations.
+
+Version 3.23.92
+~~~~~~~~~~~~~~~
+Released: 2017-03-13
+
+This is an unstable release in the 3.23 development series, with the following
+bug fixes:
+ * Allow installing broken flatpakref files
+ * Do not reload the updates list when updates are in progress
+ * Reset the headerbar title when switching to the details page
+ * Unconditionally show things that are in progress in the Installed page
+
+This release also updates translations.
+
+Version 3.23.91
+~~~~~~~~~~~~~~~
+Released: 2017-02-27
+
+This is an unstable release in the 3.23 development series, with the following
+improvements:
  * Add support for RuntimeRepo in flatpakref files
- * Avoid requesting elevated privileges just for viewing flatpakref details
- * Fix launching flatpak apps after updating
+ * Allow the user to restart the currently running gnome-software instance
+ * Never show components without AppData files
+
+The following bugs are also fixed:
+ * Initialize progress to zero right before and after processing an action
+ * Animate the removal of live updates
+ * Add YaST as a default folder in gnome-shell overview
+
+This release also updates translations.
+
+Version 3.23.90
+~~~~~~~~~~~~~~~
+Released: 2017-02-13
+
+This is an unstable release in the 3.23 development series, with the following
+improvements:
+ * Handle apt and snap URLs
+ * Show the updates panel with sections
+ * Sort the apps in the installed panel by kind
+
+The following bugs are also fixed:
+ * Add a more detailed error message when AC power is required
+ * Do not hardcode the gnome-software application name
+ * Ensure firmware is downloaded when not cached
+ * Fix a rather large memory leak when loading Steam data
+ * Fix launching Flatpak apps after updating
  * Install needed Flatpak runtimes when updating an app
- * Do not show related flatpak runtimes as separate entries
- * Improve internal locking, hopefully fixing a few hard-to-debug crashes
- * Fix a large memory leak in the steam plugin
- * Add keywords to match web apps and input methods
- * Fix a few user interface papercuts
-
-This release also updates translations.
-
-Version 3.22.5
-~~~~~~~~~~~~~~
-Released: 2017-01-16
-
-This stable release fixes the following bugs:
- * Fix local package installation
- * Fix codec and printer driver installation for packages without appdata
- * Fix update notes to show up on the Updates page
- * Add support for "+" operator at the end of SPDX license identifiers
  * Only show the scary firmware warning for removable devices
- * Various fixes for flatpak support
- * Fix several potential crashers
 
 This release also updates translations.
 
-Version 3.22.4
+Version 3.23.3
 ~~~~~~~~~~~~~~
-Released: 2016-12-08
+Released: 2016-12-15
 
-This stable release fixes the following bugs:
- * Add locking to GsApp to fix hard-to-debug thread related crashes
- * Fix various top crashers listed on Fedora's retrace server
- * Fix an issue that caused app addon install/removal to get triggered without
-   user interaction
- * Make flatpakref installation work
- * Hide review buttons when there's no internet connection
+This is an unstable release in the 3.23 development series, with the following
+improvements:
+ * Add an --install and --interaction CLI options
+ * Add the installed size of the apps in the installed view
+ * Always set a description for each notification
+ * Show an in-app notification when installed plugins are changed
+ * Use a set of stars to show the different star ratings
+
+The following bugs are also fixed:
+ * Add a missing error check to fix a common crash on LiveDVD media
+ * Add thread locking in GsApp to fix some common crashes
+ * Allow upgrading to Fedora EOL releases
+ * Don't allow review actions when offline
+ * Ensure we actually schedule firmware updates for download
+ * Fix the getting of PackageKit and flatpak update details
+ * Hide some notifications when the new app is launched or the window is closed
+ * Hide the screenshot placeholder for input methods and langpacks
 
 This release also updates translations.
 
-Version 3.22.3
+Version 3.23.2
 ~~~~~~~~~~~~~~
-Released: 2016-12-01
+Released: 2016-11-21
 
-This stable release fixes the following bugs:
- * Misc. fixes to the search results page
- * Misc. flatpak bug and crasher fixes
- * Correctly raise the codec search window under the Wayland session
- * Improve spinner state handling on the updates page
- * Make it possible to upgrade two Fedora versions at a time
- * Fix a memory leak with every search request
- * Don't show screenshot placeholder for add-ons that can't have screenshots
- * Show an error if the screenshot download fails
- * Get the screenshot metadata from the GNOME Shell Extension JSON data
+This is an unstable release in the 3.23 development series, with the following
+improvements:
+ * Add a setting for downloading updates on metered connections
+ * Add content rating interface for games
+ * Add support for pending updates that are applied on demand
+ * Add support for the flatpak DefaultBranch feature
+ * Allow showing an application review without a display name
+ * Convert the modal failure dialogs to in-app notifications
+ * Switch to using the ODRS server hosted by GNOME
+
+The following bugs are also fixed:
+ * Always get the newest screenshot for GNOME Shell extensions
+ * Avoid redownloading the same screenshots for different images
+ * Don't download updates when low on power
+ * Fix the growth in memory usage for every search request
+ * Never show a 'back' button when showing search results
+ * Show the search bar when the user does ctrl+f
+
+This release also updates translations.
 
 Version 3.22.2
 ~~~~~~~~~~~~~~

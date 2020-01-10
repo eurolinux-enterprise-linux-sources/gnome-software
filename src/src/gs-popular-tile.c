@@ -38,6 +38,7 @@ struct _GsPopularTile
 	GtkWidget	*eventbox;
 	GtkWidget	*stack;
 	GtkWidget	*stars;
+	GtkWidget	*label_origin;
 };
 
 G_DEFINE_TYPE (GsPopularTile, gs_popular_tile, GS_TYPE_APP_TILE)
@@ -53,28 +54,23 @@ app_state_changed_idle (gpointer user_data)
 {
 	GsPopularTile *tile = GS_POPULAR_TILE (user_data);
 	AtkObject *accessible;
-	GtkWidget *label;
 	gboolean installed;
 	g_autofree gchar *name = NULL;
 
 	accessible = gtk_widget_get_accessible (GTK_WIDGET (tile));
 
-	label = gtk_bin_get_child (GTK_BIN (tile->eventbox));
 	switch (gs_app_get_state (tile->app)) {
 	case AS_APP_STATE_INSTALLED:
-	case AS_APP_STATE_INSTALLING:
 	case AS_APP_STATE_REMOVING:
 	case AS_APP_STATE_UPDATABLE:
 	case AS_APP_STATE_UPDATABLE_LIVE:
 		installed = TRUE;
-		name = g_strdup_printf ("%s (%s)",
-					gs_app_get_name (tile->app),
-					_("Installed"));
-		/* TRANSLATORS: this is the small blue label on the tile
-		 * that tells the user the application is installed */
-		gtk_label_set_label (GTK_LABEL (label), _("Installed"));
+		/* TRANSLATORS: this refers to an app (by name) that is installed */
+		name = g_strdup_printf (_("%s (Installed)"),
+					gs_app_get_name (tile->app));
 		break;
 	case AS_APP_STATE_AVAILABLE:
+	case AS_APP_STATE_INSTALLING:
 	default:
 		installed = FALSE;
 		name = g_strdup (gs_app_get_name (tile->app));
@@ -102,6 +98,7 @@ static void
 gs_popular_tile_set_app (GsAppTile *app_tile, GsApp *app)
 {
 	GsPopularTile *tile = GS_POPULAR_TILE (app_tile);
+	const gchar *css;
 
 	g_return_if_fail (GS_IS_APP (app) || app == NULL);
 
@@ -123,13 +120,23 @@ gs_popular_tile_set_app (GsAppTile *app_tile, GsApp *app)
 
 	g_signal_connect (tile->app, "notify::state",
 		 	  G_CALLBACK (app_state_changed), tile);
+	g_signal_connect (tile->app, "notify::name",
+			  G_CALLBACK (app_state_changed), tile);
+	g_signal_connect (tile->app, "notify::summary",
+			  G_CALLBACK (app_state_changed), tile);
 	app_state_changed (tile->app, NULL, tile);
 
 	/* perhaps set custom css */
-	gs_utils_widget_set_css_app (app, GTK_WIDGET (tile),
-				     "GnomeSoftware::PopularTile-css");
+	css = gs_app_get_metadata_item (app, "GnomeSoftware::PopularTile-css");
+	gs_utils_widget_set_css (GTK_WIDGET (tile), css);
 
-	gs_image_set_from_pixbuf (GTK_IMAGE (tile->image), gs_app_get_pixbuf (tile->app));
+	if (gs_app_get_pixbuf (tile->app) != NULL) {
+		gs_image_set_from_pixbuf (GTK_IMAGE (tile->image), gs_app_get_pixbuf (tile->app));
+	} else {
+		gtk_image_set_from_icon_name (GTK_IMAGE (tile->image),
+					      "application-x-executable",
+					      GTK_ICON_SIZE_DIALOG);
+	}
 
 	gtk_label_set_label (GTK_LABEL (tile->label), gs_app_get_name (app));
 }
@@ -173,6 +180,7 @@ gs_popular_tile_class_init (GsPopularTileClass *klass)
 	gtk_widget_class_bind_template_child (widget_class, GsPopularTile, eventbox);
 	gtk_widget_class_bind_template_child (widget_class, GsPopularTile, stack);
 	gtk_widget_class_bind_template_child (widget_class, GsPopularTile, stars);
+	gtk_widget_class_bind_template_child (widget_class, GsPopularTile, label_origin);
 }
 
 GtkWidget *
@@ -181,9 +189,29 @@ gs_popular_tile_new (GsApp *app)
 	GsPopularTile *tile;
 
 	tile = g_object_new (GS_TYPE_POPULAR_TILE, NULL);
-	gs_app_tile_set_app (GS_APP_TILE (tile), app);
+	if (app != NULL)
+		gs_app_tile_set_app (GS_APP_TILE (tile), app);
 
 	return GTK_WIDGET (tile);
+}
+
+void
+gs_popular_tile_show_source (GsPopularTile *tile, gboolean show_source)
+{
+	if (show_source) {
+		const gchar *hostname = gs_app_get_origin_hostname (tile->app);
+		if (hostname != NULL) {
+			/* TRANSLATORS: this refers to where the app came from */
+			g_autofree gchar *source_text = g_strdup_printf (_("Source: %s"),
+									 hostname);
+			gtk_label_set_label (GTK_LABEL (tile->label_origin), source_text);
+		} else {
+			/* if the hostname is not valid then we hide the source */
+			show_source = FALSE;
+		}
+	}
+
+	gtk_widget_set_visible (tile->label_origin, show_source);
 }
 
 /* vim: set noexpandtab: */

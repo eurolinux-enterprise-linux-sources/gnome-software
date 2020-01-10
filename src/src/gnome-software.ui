@@ -284,6 +284,7 @@
                 <property name="can_focus">True</property>
                 <property name="activates_default">True</property>
                 <property name="width_request">500</property>
+                <property name="max_length">100</property>
                 <property name="hexpand">True</property>
                 <property name="halign">center</property>
               </object>
@@ -302,85 +303,211 @@
         </child>
 
         <child>
-          <object class="GtkStack" id="stack_main">
+          <object class="GtkOverlay" id="overlay">
             <property name="visible">True</property>
-            <child>
-              <object class="GsShellOverview" id="shell_overview">
+            <property name="halign">fill</property>
+            <property name="valign">fill</property>
+            <child type="overlay">
+              <object class="GtkRevealer" id="notification_event">
                 <property name="visible">True</property>
+                <property name="halign">GTK_ALIGN_CENTER</property>
+                <property name="valign">GTK_ALIGN_START</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="orientation">horizontal</property>
+                    <property name="spacing">6</property>
+                    <property name="visible">True</property>
+                    <style>
+                      <class name="app-notification"/>
+                    </style>
+                    <child>
+                      <object class="GtkLabel" id="label_events">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="label">Some Title</property>
+                        <property name="wrap">True</property>
+                        <property name="wrap_mode">word-char</property>
+                        <property name="max_width_chars">60</property>
+                        <property name="margin_start">9</property>
+                        <property name="margin_end">9</property>
+                        <attributes>
+                          <attribute name="weight" value="bold"/>
+                        </attributes>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButtonBox">
+                        <property name="can_focus">False</property>
+                        <property name="layout_style">end</property>
+                        <property name="visible">True</property>
+                        <child>
+                          <object class="GtkButton" id="button_events_sources">
+                            <property name="label" translatable="yes" comments="button in the info bar">Software Repositories</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="button_events_no_space">
+                            <property name="label" translatable="yes" comments="button in the info bar">Examine Disk</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="button_events_network_settings">
+                            <property name="label" translatable="yes" comments="button in the info bar">Network Settings</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="button_events_restart_required">
+                            <property name="label" translatable="yes" comments="button in the info bar">Restart Now</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="button_events_more_info">
+                            <property name="label" translatable="yes" comments="button in the info bar">More Information</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">True</property>
+                            <property name="fill">True</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="button_events_dismiss">
+                        <property name="visible">True</property>
+                        <property name="valign">start</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="visible">True</property>
+                            <property name="icon_name">window-close-symbolic</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
-              <packing>
-                <property name="name">overview</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GsShellInstalled" id="shell_installed">
-                <property name="visible">True</property>
-              </object>
-              <packing>
-                <property name="name">installed</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GsShellModerate" id="shell_moderate">
-                <property name="visible">True</property>
-              </object>
-              <packing>
-                <property name="name">moderate</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GsShellLoading" id="shell_loading">
-                <property name="visible">True</property>
-              </object>
-              <packing>
-                <property name="name">loading</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GsShellSearch" id="shell_search">
-                <property name="visible">True</property>
-              </object>
-              <packing>
-                <property name="name">search</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GsShellUpdates" id="shell_updates">
-                <property name="visible">True</property>
-              </object>
-              <packing>
-                <property name="name">updates</property>
-              </packing>
             </child>
 
-
             <child>
-              <object class="GsShellDetails" id="shell_details">
+              <object class="GtkStack" id="stack_main">
                 <property name="visible">True</property>
-              </object>
-              <packing>
-                <property name="name">details</property>
-              </packing>
-            </child>
+                <child>
+                  <object class="GsOverviewPage" id="overview_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">overview</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GsInstalledPage" id="installed_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">installed</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GsModeratePage" id="moderate_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">moderate</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GsLoadingPage" id="loading_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">loading</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GsSearchPage" id="search_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">search</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GsUpdatesPage" id="updates_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">updates</property>
+                  </packing>
+                </child>
 
+                <child>
+                  <object class="GsDetailsPage" id="details_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">details</property>
+                  </packing>
+                </child>
 
-            <child>
-              <object class="GsShellCategory" id="shell_category">
-                <property name="visible">True</property>
+                <child>
+                  <object class="GsCategoryPage" id="category_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">category</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GsExtrasPage" id="extras_page">
+                    <property name="visible">True</property>
+                  </object>
+                  <packing>
+                    <property name="name">extras</property>
+                  </packing>
+                </child>
               </object>
-              <packing>
-                <property name="name">category</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GsShellExtras" id="shell_extras">
-                <property name="visible">True</property>
-              </object>
-              <packing>
-                <property name="name">extras</property>
-              </packing>
+
             </child>
           </object>
+
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>

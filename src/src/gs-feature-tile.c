@@ -26,13 +26,13 @@
 
 #include "gs-feature-tile.h"
 #include "gs-common.h"
+#include "gs-css.h"
 
 struct _GsFeatureTile
 {
 	GsAppTile	 parent_instance;
 
 	GsApp		*app;
-	GtkWidget	*image;
 	GtkWidget	*stack;
 	GtkWidget	*title;
 	GtkWidget	*subtitle;
@@ -51,13 +51,34 @@ app_state_changed_idle (gpointer user_data)
 {
 	GsFeatureTile *tile = GS_FEATURE_TILE (user_data);
 	AtkObject *accessible;
+	const gchar *markup;
 	g_autofree gchar *name = NULL;
+	g_autoptr(GsCss) css = NULL;
+
+	/* nothing set yet */
+	if (tile->app == NULL)
+		return G_SOURCE_REMOVE;
+
+	/* update text */
+	gtk_label_set_label (GTK_LABEL (tile->title), gs_app_get_name (tile->app));
+	gtk_label_set_label (GTK_LABEL (tile->subtitle), gs_app_get_summary (tile->app));
+
+	/* perhaps set custom css */
+	markup = gs_app_get_metadata_item (tile->app, "GnomeSoftware::FeatureTile-css");
+	css = gs_css_new ();
+	if (markup != NULL)
+		gs_css_parse (css, markup, NULL);
+	gs_utils_widget_set_css (GTK_WIDGET (tile),
+				 gs_css_get_markup_for_id (css, "tile"));
+	gs_utils_widget_set_css (tile->title,
+				 gs_css_get_markup_for_id (css, "name"));
+	gs_utils_widget_set_css (tile->subtitle,
+				 gs_css_get_markup_for_id (css, "summary"));
 
 	accessible = gtk_widget_get_accessible (GTK_WIDGET (tile));
 
 	switch (gs_app_get_state (tile->app)) {
 	case AS_APP_STATE_INSTALLED:
-	case AS_APP_STATE_INSTALLING:
 	case AS_APP_STATE_REMOVING:
 	case AS_APP_STATE_UPDATABLE:
 	case AS_APP_STATE_UPDATABLE_LIVE:
@@ -66,12 +87,13 @@ app_state_changed_idle (gpointer user_data)
 					_("Installed"));
 		break;
 	case AS_APP_STATE_AVAILABLE:
+	case AS_APP_STATE_INSTALLING:
 	default:
 		name = g_strdup (gs_app_get_name (tile->app));
 		break;
 	}
 
-	if (GTK_IS_ACCESSIBLE (accessible)) {
+	if (GTK_IS_ACCESSIBLE (accessible) && name != NULL) {
 		atk_object_set_name (accessible, name);
 		atk_object_set_description (accessible, gs_app_get_summary (tile->app));
 	}
@@ -94,25 +116,22 @@ gs_feature_tile_set_app (GsAppTile *app_tile, GsApp *app)
 
 	g_return_if_fail (GS_IS_APP (app) || app == NULL);
 
-	if (tile->app)
+	if (tile->app != NULL)
 		g_signal_handlers_disconnect_by_func (tile->app, app_state_changed, tile);
 
 	g_set_object (&tile->app, app);
-	if (!app)
+	if (app == NULL)
 		return;
 
 	gtk_stack_set_visible_child_name (GTK_STACK (tile->stack), "content");
 
 	g_signal_connect (tile->app, "notify::state",
 			  G_CALLBACK (app_state_changed), tile);
+	g_signal_connect (tile->app, "notify::name",
+			  G_CALLBACK (app_state_changed), tile);
+	g_signal_connect (tile->app, "notify::summary",
+			  G_CALLBACK (app_state_changed), tile);
 	app_state_changed (tile->app, NULL, tile);
-
-	gtk_label_set_label (GTK_LABEL (tile->title), gs_app_get_name (app));
-	gtk_label_set_label (GTK_LABEL (tile->subtitle), gs_app_get_summary (app));
-
-	/* perhaps set custom css */
-	gs_utils_widget_set_css_app (app, GTK_WIDGET (tile),
-				     "GnomeSoftware::FeatureTile-css");
 }
 
 static void
@@ -148,7 +167,6 @@ gs_feature_tile_class_init (GsFeatureTileClass *klass)
 
 	gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/Software/gs-feature-tile.ui");
 
-	gtk_widget_class_bind_template_child (widget_class, GsFeatureTile, image);
 	gtk_widget_class_bind_template_child (widget_class, GsFeatureTile, stack);
 	gtk_widget_class_bind_template_child (widget_class, GsFeatureTile, title);
 	gtk_widget_class_bind_template_child (widget_class, GsFeatureTile, subtitle);
@@ -158,10 +176,11 @@ GtkWidget *
 gs_feature_tile_new (GsApp *app)
 {
 	GsFeatureTile *tile;
-
-	tile = g_object_new (GS_TYPE_FEATURE_TILE, NULL);
-	gs_app_tile_set_app (GS_APP_TILE (tile), app);
-
+	tile = g_object_new (GS_TYPE_FEATURE_TILE,
+			     "vexpand", FALSE,
+			     NULL);
+	if (app != NULL)
+		gs_app_tile_set_app (GS_APP_TILE (tile), app);
 	return GTK_WIDGET (tile);
 }
 
