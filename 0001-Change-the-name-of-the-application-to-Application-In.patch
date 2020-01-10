@@ -1,0 +1,24 @@
+From f1ddbbbb11503d6fc236c2f1a6d3678b6459cdad Mon Sep 17 00:00:00 2001
+From: Richard Hughes <richard@hughsie.com>
+Date: Wed, 8 Jul 2015 16:38:36 +0100
+Subject: [PATCH] Change the name of the application to 'Application Installer'
+
+The 'Software' name was taken by GNOME PackageKit prior to the rebase.
+---
+ src/org.gnome.Software.desktop.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/org.gnome.Software.desktop.in b/src/org.gnome.Software.desktop.in
+index 849a14c..116002f 100644
+--- a/src/org.gnome.Software.desktop.in
++++ b/src/org.gnome.Software.desktop.in
+@@ -1,5 +1,5 @@
+ [Desktop Entry]
+-_Name=Software
++_Name=Application Installer
+ _Comment=Add, remove or update software on this computer
+ Icon=gnome-software
+ Exec=gnome-software
+-- 
+2.4.3
+

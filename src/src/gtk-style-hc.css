@@ -1,0 +1,52 @@
+.installed-overlay-box {
+	font-size: 80%;
+	background-color: @theme_button_active_bg;
+	border-radius: 4px;
+	color: @theme_base_color;
+}
+
+.popular-installed-overlay-box {
+	font-size: 80%;
+	background-color: @theme_button_active_bg;
+	border-radius: 0;
+	color: @theme_base_color;
+}
+
+@keyframes throbbing {
+        0% { background-image: linear-gradient(to bottom, transparent, transparent); }
+}
+
+.needs-attention {
+        background-image: linear-gradient(to bottom, @theme_button_active_bg, @theme_button_active_bg);
+        animation: throbbing linear 1s infinite alternate;
+}
+
+.application-details-title {
+	font-weight: bold;
+	font-size: 14px;
+}
+
+.folder-label {
+        background-color: #999999;
+        border-radius: 5px;
+        padding: 5px;
+        color: white;
+}
+
+.header-label {
+	font-size: 11px;
+	padding: 6px;
+	background-image: none;
+	background-color: #ffffff;
+	border-color: #000000;
+}
+
+.counter-label {
+    text-shadow: none;
+    color: @theme_selected_fg_color;
+    background-color: @theme_highlight_color;
+    font-size: smaller;
+    font-weight: bold;
+    border-radius: 4px;
+    padding: 0px 4px;
+}

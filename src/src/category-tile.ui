@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <!-- interface-requires gtk+ 3.10 -->
+  <template class="GsCategoryTile" parent="GtkButton">
+    <property name="visible">True</property>
+    <style>
+      <class name="view"/>
+      <class name="tile"/>
+    </style>
+    <child>
+      <object class="GtkLabel" id="label">
+        <property name="visible">True</property>
+        <property name="margin_top">11</property>
+        <property name="margin_bottom">12</property>
+        <property name="margin_start">18</property>
+        <property name="margin_end">18</property>
+        <property name="xalign">0</property>
+      </object>
+    </child>
+  </template>
+</interface>
